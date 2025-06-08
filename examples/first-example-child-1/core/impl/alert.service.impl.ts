@@ -1,5 +1,5 @@
 import { AlertService } from '@example/first-children-decl';
-import { anno } from 'servkit';
+import { anno } from 'rpckit';
 
 @anno.impl()
 export class AlertServiceImpl extends AlertService {

@@ -4,21 +4,21 @@ import { ServGlobalServiceConfig, ServGlobalServiceManager } from './ServGlobalS
 import { EventEmitter } from 'eventemitter3';
 
 /**
- * Servkit配置
+ * Rpckit配置
  *
  * @export
- * @interface ServkitConfig
+ * @interface RpckitConfig
  */
-export interface ServkitConfig {
+export interface RpckitConfig {
     /**
-     * 全局服务，也可在servkit初始化后，手动添加
+     * 全局服务，也可在rpckit初始化后，手动添加
      *
      * @type {ServGlobalServiceConfig}
-     * @memberof ServkitConfig
+     * @memberof RpckitConfig
      */
     service?: ServGlobalServiceConfig;
 }
-export class Servkit extends EventEmitter {
+export class Rpckit extends EventEmitter {
     namespace: string;
 
     service: ServGlobalServiceManager;
@@ -31,7 +31,7 @@ export class Servkit extends EventEmitter {
         this.namespace = namespace || '';
     }
 
-    init(config?: ServkitConfig) {
+    init(config?: RpckitConfig) {
         config = config || {};
         
         this.terminals = [];
@@ -80,12 +80,12 @@ export class Servkit extends EventEmitter {
     }
 }
 
-let sInstance: Servkit = undefined!;
+let sInstance: Rpckit = undefined!;
 try {
-    sInstance = new Servkit();
+    sInstance = new Rpckit();
     sInstance.init();
 } catch (e) {
     asyncThrow(e);
 }
 
-export const servkit = sInstance;
+export const rpckit = sInstance;

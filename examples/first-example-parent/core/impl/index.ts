@@ -1,5 +1,5 @@
 import { MessageService } from '@example/first-example-decl';
-import { ServServiceConfig } from "servkit";
+import { ServServiceConfig } from "rpckit";
 import { MessageServiceImpl } from './message.service.impl';
 
 /**

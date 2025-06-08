@@ -1,7 +1,7 @@
 import { Message2Service, MessageService } from '@example/first-example-decl';
 import { Button, Row } from 'antd';
 import React from 'react';
-import { sappSDK } from 'servkit';
+import { sappSDK } from 'rpckit';
 
 export function App() {
 

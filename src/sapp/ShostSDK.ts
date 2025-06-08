@@ -2,7 +2,7 @@ import { ServTerminal, ServTerminalConfig, EServTerminal } from '../terminal/Ser
 import { ServServiceServer } from '../service/ServServiceServer';
 import { asyncThrow, EServConstant } from '../common/common';
 import { EServChannel } from '../session/channel/ServChannel';
-import { servkit, Servkit } from '../servkit/Servkit';
+import { rpckit, Rpckit } from '../rpckit/Rpckit';
 import { anno, ServAPIArgs } from '../service/ServService';
 import { ServServiceClient } from '../service/ServServiceClient';
 import {
@@ -97,9 +97,9 @@ export interface ShostContentPageInfo {
  */
 export interface ShostSDKConfig {
     /**
-     * SHOSTSDK底层Servkit，默认使用全局的servkit
+     * SHOSTSDK底层Rpckit，默认使用全局的rpckit
      */
-    servkit?: Servkit;
+    rpckit?: Rpckit;
 
     /**
      * host页面提供的数据接口
@@ -236,13 +236,13 @@ export class ShostSDK extends EventEmitter {
     }
 
     /**
-     * 获取SHOSTSDK使用的servkit
+     * 获取SHOSTSDK使用的rpckit
      *
      * @returns
      * @memberof SHOSTSDK
      */
-    getServkit() {
-        return this.config.servkit || servkit;
+    getRpckit() {
+        return this.config.rpckit || rpckit;
     }
 
     /**
@@ -519,7 +519,7 @@ export class ShostSDK extends EventEmitter {
         }
 
         // Setup terminal
-        this.terminal = this.getServkit().createTerminal(terminalConfig);
+        this.terminal = this.getRpckit().createTerminal(terminalConfig);
 
         // Setup host service
         const self = this;
@@ -562,7 +562,7 @@ export class ShostSDK extends EventEmitter {
             this.terminal = undefined!;
             // give a chance to send back message
             setTimeout(() => {
-                terminal.servkit.destroyTerminal(terminal);
+                terminal.rpckit.destroyTerminal(terminal);
             });
         }
     }

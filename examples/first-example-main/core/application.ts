@@ -1,4 +1,4 @@
-import { EServRPCEvent, sappMGR } from 'servkit';
+import { EServRPCEvent, sappMGR } from 'rpckit';
 import { ALL_APP_INFOS } from '../constants';
 import { ALL_SERVICE } from './impl';
 import { find } from 'lodash';
@@ -21,7 +21,7 @@ sappMGR.createHost({
     },
 });
 
-sappMGR.getServkit().on(EServRPCEvent.CALL, (...args) => {
+sappMGR.getRpckit().on(EServRPCEvent.CALL, (...args) => {
     // tslint:disable-next-line:no-console
     console.log('RPC CALL Event', args);
 });

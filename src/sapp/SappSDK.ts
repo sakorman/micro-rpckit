@@ -3,7 +3,7 @@ import { ServServiceServerConfig, ServServiceServer } from '../service/ServServi
 import { asyncThrow, asyncThrowMessage } from '../common/common';
 import { parseServQueryParams } from '../common/query';
 import { EServChannel } from '../session/channel/ServChannel';
-import { servkit, Servkit } from '../servkit/Servkit';
+import { rpckit, Rpckit } from '../rpckit/Rpckit';
 import { anno, ServAPIArgs, ServAPIRetn } from '../service/ServService';
 import { ServServiceClientConfig, ServServiceClient } from '../service/ServServiceClient';
 import { ServSessionConfig } from '../session/ServSession';
@@ -99,9 +99,9 @@ export interface SappSDKAsyncLoadDeclContext {
  */
 export interface SappSDKConfig {
     /**
-     * SappSDK底层Servkit，默认使用全局的servkit
+     * SappSDK底层Rpckit，默认使用全局的rpckit
      */
-    servkit?: Servkit;
+    rpckit?: Rpckit;
 
     /**
      * 通信的terminal id；SappSDK仍然采用的是ServTerminal作为双端通信，该双端通信基于一个id进行匹配
@@ -202,7 +202,7 @@ export interface SappSDKConfig {
 
     /**
      * SappSDK的mock配置，通过该配置，SappSDK应用可脱离主应用调试开发；
-     * 通过window.__$servkit.enableSappSDKMock()或者链接添加__SAPPSDK_MOCK_ENABLE__打开开关才能生效；
+     * 通过window.__$rpckit.enableSappSDKMock()或者链接添加__SAPPSDK_MOCK_ENABLE__打开开关才能生效；
      *
      * @type {SappSDKMockConfig}
      * @memberof SappSDKConfig
@@ -319,13 +319,13 @@ export class SappSDK extends EventEmitter {
     }
 
     /**
-     * 获取SappSDK使用的servkit
+     * 获取SappSDK使用的rpckit
      *
      * @returns
      * @memberof SappSDK
      */
-    getServkit() {
-        return this.config.servkit || servkit;
+    getRpckit() {
+        return this.config.rpckit || rpckit;
     }
 
     /**
@@ -585,7 +585,7 @@ export class SappSDK extends EventEmitter {
 
     protected onStartFailed() {
         if (this.terminal) {
-            this.terminal.servkit.destroyTerminal(this.terminal);
+            this.terminal.rpckit.destroyTerminal(this.terminal);
         }
         this.terminal = undefined!;
     }
@@ -688,7 +688,7 @@ export class SappSDK extends EventEmitter {
         }
 
         // Setup terminal
-        this.terminal = this.getServkit().createTerminal(terminalConfig);
+        this.terminal = this.getRpckit().createTerminal(terminalConfig);
 
         // Setup lifecycle
         const self = this;
@@ -758,7 +758,7 @@ export class SappSDK extends EventEmitter {
     }
 
     protected async onShow(params: SappShowParams) {
-        let ret: SappOnShowResult | void;
+        let ret: SappOnShowResult | void = undefined;
         if (this.config.onShow) {
             ret = await this.config.onShow(this, params);
         }
@@ -769,7 +769,7 @@ export class SappSDK extends EventEmitter {
     }
 
     protected async onHide(params: SappHideParams) {
-        let ret: SappOnHideResult | void;
+        let ret: SappOnHideResult | void = undefined;
         if (this.config.onHide) {
             ret = await this.config.onHide(this, params);
         }
@@ -811,7 +811,7 @@ export class SappSDK extends EventEmitter {
      * 
      * @example
      * ``` ts
-     * SappSDK.declAsyncLoad('com.servkit.example', {
+     * SappSDK.declAsyncLoad('com.rpckit.example', {
      *     bootstrap: (sdk) => {
      *         sdk.setConfig({
      *             onCreate: () => { ... },

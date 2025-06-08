@@ -1,6 +1,6 @@
 import { Button, Card, Modal } from 'antd';
 import React, { memo, useEffect, useRef } from 'react';
-import { sappMGR } from 'servkit';
+import { sappMGR } from 'rpckit';
 import { ISappInState } from '../app';
 import './index.less';
 

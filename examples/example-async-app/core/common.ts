@@ -1,4 +1,4 @@
-import { SappAsyncLoadSDK } from 'servkit';
+import { SappAsyncLoadSDK } from 'rpckit';
 
 export let sappSDK: SappAsyncLoadSDK;
 

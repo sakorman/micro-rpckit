@@ -8,12 +8,12 @@ export const Env = {
 };
 
 try {
-    if ((window as any).__$$servkit) {
+    if ((window as any).__$$rpckit) {
         // tslint:disable-next-line:no-console
         console.warn('\n\nSERVKIT WARNING!\n\nYOU HAVE MULTIPLE VERSIONS OF SERVKIT INSTALLED IN YOUR PROJECT!\n');
     }
-    const LOCAL_ENV = '__$$servkit';
-    const __$$servkit = {
+    const LOCAL_ENV = '__$$rpckit';
+    const __$$rpckit = {
         getLocalEnv: (key?: string) => {
             try {
                 const jsonData = window.localStorage.getItem(LOCAL_ENV);
@@ -25,7 +25,7 @@ try {
         },
         setLocalEnv: (key: string, val: any = true) => {
             try {
-                const data = __$$servkit.getLocalEnv();
+                const data = __$$rpckit.getLocalEnv();
                 data[key] = val;
                 window.localStorage.setItem(LOCAL_ENV, JSON.stringify(data));
                 return data;
@@ -34,23 +34,23 @@ try {
             }
         },
         enableDev: () => {
-            __$$servkit.setLocalEnv('DEV');
+            __$$rpckit.setLocalEnv('DEV');
         },
         disableDev: () => {
-            __$$servkit.setLocalEnv('DEV', false);
+            __$$rpckit.setLocalEnv('DEV', false);
         },
         enableSappSDKMock: () => {
-            __$$servkit.setLocalEnv('SAPPSDK_MOCK');
+            __$$rpckit.setLocalEnv('SAPPSDK_MOCK');
         },
         disableSappSDKMock: () => {
-            __$$servkit.setLocalEnv('SAPPSDK_MOCK', false);
+            __$$rpckit.setLocalEnv('SAPPSDK_MOCK', false);
         },
         Env,
     };
-    const localEnv = __$$servkit.getLocalEnv();
+    const localEnv = __$$rpckit.getLocalEnv();
     Object.assign(Env, localEnv);
 
-    (window as any).__$$servkit = __$$servkit;
+    (window as any).__$$rpckit = __$$rpckit;
 } catch (e) {
     //
 }

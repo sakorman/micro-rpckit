@@ -1,5 +1,5 @@
 import { IMessageOption, ImessageServiceType, MessageService } from '@example/first-example-decl';
-import { anno, ServAPIRetn, SappAPICallContext } from 'servkit';
+import { anno, ServAPIRetn, SappAPICallContext } from 'rpckit';
 import { message as antdMessage } from 'antd';
 import { isString } from 'lodash';
 import { defer } from '../../util/promise';

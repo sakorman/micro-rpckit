@@ -1,6 +1,6 @@
 import { ServServiceClient, ServServiceClientConfig } from '../service/ServServiceClient';
 import { ServServiceServer, ServServiceServerConfig } from '../service/ServServiceServer';
-import { Servkit } from '../servkit/Servkit';
+import { Rpckit } from '../rpckit/Rpckit';
 import { ServSession, ServSessionConfig, ServSessionOpenOptions } from '../session/ServSession';
 
 export enum EServTerminal {
@@ -21,7 +21,7 @@ export class ServTerminal {
     id: string;
     type: EServTerminal;
 
-    servkit: Servkit;
+    rpckit: Rpckit;
 
     client: ServServiceClient;
     server: ServServiceServer;
@@ -29,8 +29,8 @@ export class ServTerminal {
 
     protected extData: any;
 
-    constructor(servkit: Servkit) {
-        this.servkit = servkit;
+    constructor(rpckit: Rpckit) {
+        this.rpckit = rpckit;
     }
 
     init(config: ServTerminalConfig) {

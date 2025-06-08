@@ -1,4 +1,4 @@
-import { ESappType } from "servkit";
+import { ESappType } from "rpckit";
 
 export const CHILD_FIRST_APP_ID = 'com.example.first.child-1';
 

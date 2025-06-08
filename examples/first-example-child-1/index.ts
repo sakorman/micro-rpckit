@@ -1,4 +1,4 @@
-import { sappSDK } from 'servkit';
+import { sappSDK } from 'rpckit';
 import './app.less';
 import 'antd/dist/antd.css';
 import { ALL_SERVICE } from './core/impl';

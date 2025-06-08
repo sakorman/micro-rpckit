@@ -223,4 +223,4 @@ export default function processTpl(tpl, baseURI) {
 
 
 // WEBPACK FOOTER //
-// ./node_modules/servkit/src/load/importHtml/processTpl.ts
+// ./node_modules/rpckit/src/load/importHtml/processTpl.ts

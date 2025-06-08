@@ -138,7 +138,7 @@ export class SappPlainPage extends Sapp {
                 }
 
                 if (this.terminal) {
-                    this.terminal.servkit.destroyTerminal(this.terminal);
+                    this.terminal.rpckit.destroyTerminal(this.terminal);
                     this.terminal = undefined!;
                 }
 
@@ -197,7 +197,7 @@ export class SappPlainPage extends Sapp {
         }
 
         // Setup terminal
-        this.terminal = this.getServkit().createTerminal(terminalConfig);
+        this.terminal = this.getRpckit().createTerminal(terminalConfig);
         this.terminal.setExtData<SappTerminalExtData>({
             app: this,
             info: this.info,

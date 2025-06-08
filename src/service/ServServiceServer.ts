@@ -36,7 +36,7 @@ export interface ServServiceServerConfig {
 export enum EServRPCEvent {
     /**
      * RPC处理事件；
-     * 事件传递参数：API Return Promise，API Args，API Name，ServService，ServTerminal，Servkit 
+     * 事件传递参数：API Return Promise，API Args，API Name，ServService，ServTerminal，Rpckit 
      */
     CALL = 'SERV_RPC_CALL',
 }
@@ -62,7 +62,7 @@ export class ServServiceServer {
         this.ACLResolver = config.ACLResolver;
 
         if (config.serviceRefer) {
-            this.serviceRefer = this.terminal.servkit.service.referServices(config.serviceRefer);
+            this.serviceRefer = this.terminal.rpckit.service.referServices(config.serviceRefer);
             this.serviceRefer.onEvnterEmit = this.onEventerEmit;
         }
 
@@ -278,17 +278,17 @@ export class ServServiceServer {
                 }
             }
 
-            // Trigger servkit rpc event
+            // Trigger rpckit rpc event
             if (!meta.noRPCCallEvent) {
                 try {
-                    this.terminal.servkit.emit(
+                    this.terminal.rpckit.emit(
                         EServRPCEvent.CALL,
                         retnPromise,
                         args,
                         api,
                         service,
                         this.terminal,
-                        this.terminal.servkit);
+                        this.terminal.rpckit);
                 } catch (e) {
                     asyncThrow(e);
                 }

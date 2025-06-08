@@ -95,8 +95,10 @@ export class ServMessageContextManager {
 
     getCtxData<T = any>(id: string): T {
         const ctxt = this.contexts[id];
-
-        return ctxt ? ctxt.ctxData : undefined;
+        if (!ctxt) {
+            throw new Error(`Context with id ${id} not found`);
+        }
+        return ctxt.ctxData;
     }
 
     succeed(id: string, data?: any): boolean {

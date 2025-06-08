@@ -1,5 +1,5 @@
 import { AlertService } from '@example/first-children-decl';
-import { ServServiceConfig } from 'servkit';
+import { ServServiceConfig } from 'rpckit';
 import { AlertServiceImpl } from './alert.service.impl';
 
 /**

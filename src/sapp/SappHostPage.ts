@@ -167,7 +167,7 @@ export class SappHostPage extends Sapp {
             this.terminal = undefined!;
             // give a chance to send back message
             setTimeout(() => {
-                terminal.servkit.destroyTerminal(terminal);
+                terminal.rpckit.destroyTerminal(terminal);
             });
         }
 
@@ -229,7 +229,7 @@ export class SappHostPage extends Sapp {
         }
 
         // Setup terminal
-        this.terminal = this.getServkit().createTerminal(terminalConfig);
+        this.terminal = this.getRpckit().createTerminal(terminalConfig);
         this.terminal.setExtData<SappTerminalExtData>({
             app: this,
             info: this.info,

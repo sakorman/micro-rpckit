@@ -133,8 +133,8 @@ export class ServSession {
     }
 
     getID() {
-        return this.terminal.servkit.namespace
-                ? this.terminal.servkit.namespace + '-' + this.terminal.id
+        return this.terminal.rpckit.namespace
+                ? this.terminal.rpckit.namespace + '-' + this.terminal.id
                 : this.terminal.id;
     }
 
