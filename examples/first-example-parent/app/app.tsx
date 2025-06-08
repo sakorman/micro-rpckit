@@ -2,7 +2,7 @@ import { MessageService } from '@example/first-example-decl';
 import { Button, Layout, Space } from 'antd';
 import React, { useRef } from 'react';
 import './app.less';
-import { shostSDK } from 'servkit';
+import { shostSDK } from 'rpckit';
 import { MessageService as ParentMessageService } from '@example/first-example-parent-decl';
 import { MessageServiceImpl } from '../core/impl/message.service.impl';
 

@@ -184,7 +184,7 @@ export class SappSDKMock {
             terminalConfig.client = await config.resolveServiceClientConfig();
         }
 
-        const terminal = this.sdk.getServkit().createTerminal(terminalConfig);
+        const terminal = this.sdk.getRpckit().createTerminal(terminalConfig);
 
         const self = this;
         const SappLifecycleImpl = class extends SappLifecycle {
@@ -349,7 +349,7 @@ export class SappSDKMock {
                     // The close operation maybe from sapp, need to send back message;
                     // so lazy the destroy to next tick 
                     setTimeout(() => {
-                        terminal.servkit.destroyTerminal(terminal);
+                        terminal.rpckit.destroyTerminal(terminal);
                     });
                 }
 

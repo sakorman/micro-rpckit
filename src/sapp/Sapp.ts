@@ -68,7 +68,7 @@ export enum ESappType {
  */
 export class SappInfo {
     /**
-     * 应用唯一ID，建议使用类Java的域ID命名方式，比如“com.servkit.example”
+     * 应用唯一ID，建议使用类Java的域ID命名方式，比如“com.rpckit.example”
      *
      * @type {string}
      * @memberof SappInfo
@@ -236,7 +236,7 @@ export interface SappConfig {
     resolveStartShowData?(app: Sapp): Promise<any> | any;
 
     /**
-     * servkit底层配置构造API；构造Sapp向SappSDK中暴露的服务
+     * rpckit底层配置构造API；构造Sapp向SappSDK中暴露的服务
      *
      * @param {Sapp} app
      * @returns {(Promise<ServServiceServerConfig> | ServServiceServerConfig)}
@@ -245,7 +245,7 @@ export interface SappConfig {
     resolveServiceServerConfig?(app: Sapp): Promise<ServServiceServerConfig> | ServServiceServerConfig;
 
     /**
-     * servkit底层配置构造API；暂无
+     * rpckit底层配置构造API；暂无
      *
      * @param {Sapp} app
      * @returns {(Promise<ServServiceClientConfig> | ServServiceClientConfig)}
@@ -254,7 +254,7 @@ export interface SappConfig {
     resolveServiceClientConfig?(app: Sapp): Promise<ServServiceClientConfig> | ServServiceClientConfig;
 
     /**
-     * servkit底层配置构造API；构造会话配置
+     * rpckit底层配置构造API；构造会话配置
      *
      * @param {Sapp} app
      * @returns {(Promise<ServSessionConfig> | ServSessionConfig)}
@@ -263,7 +263,7 @@ export interface SappConfig {
     resolveSessionConfig?(app: Sapp): Promise<ServSessionConfig> | ServSessionConfig;
 
     /**
-     * servkit底层配置构造API；ServTerminal相关构造回调
+     * rpckit底层配置构造API；ServTerminal相关构造回调
      *
      * @param {Sapp} app
      * @param {ServTerminalConfig} config
@@ -274,7 +274,7 @@ export interface SappConfig {
         : Promise<ServTerminalConfig> | ServTerminalConfig | void;
 
     /**
-     * servkit底层配置构造API；Service ACL权限管理
+     * rpckit底层配置构造API；Service ACL权限管理
      *
      * @param {Sapp} app
      * @returns {SappACLResolver}
@@ -435,7 +435,7 @@ export class Sapp {
     closed: Deferred<any>;
 
     /**
-     * servkit底层通信terminal
+     * rpckit底层通信terminal
      *
      * @type {ServTerminal}
      * @memberof Sapp
@@ -527,8 +527,8 @@ export class Sapp {
         return this.config;
     }
 
-    getServkit() {
-        return this.manager ? this.manager.getServkit() : undefined!;
+    getRpckit() {
+        return this.manager ? this.manager.getRpckit() : undefined!;
     }
 
     /**
@@ -823,7 +823,7 @@ export class Sapp {
                     // The close operation maybe from sapp, need to send back message;
                     // so lazy the destroy to next tick
                     setTimeout(() => {
-                        terminal.servkit.destroyTerminal(terminal);
+                        terminal.rpckit.destroyTerminal(terminal);
                     });
                 }
 
@@ -1003,7 +1003,7 @@ export class Sapp {
 
     protected onStartFailed() {
         if (this.terminal) {
-            this.terminal.servkit.destroyTerminal(this.terminal);
+            this.terminal.rpckit.destroyTerminal(this.terminal);
         }
         this.terminal = undefined!;
     }
@@ -1090,7 +1090,7 @@ export class Sapp {
         }
 
         // Setup terminal
-        this.terminal = this.getServkit().createTerminal(terminalConfig);
+        this.terminal = this.getRpckit().createTerminal(terminalConfig);
         this.terminal.setExtData<SappTerminalExtData>({
             app: this,
             info: this.info,
@@ -1187,7 +1187,7 @@ export class Sapp {
     }
 
     /**
-     * servkit底层API，获取terminal id
+     * rpckit底层API，获取terminal id
      *
      * @returns
      * @memberof Sapp

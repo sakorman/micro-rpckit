@@ -1,4 +1,4 @@
-import { SappSDK } from 'servkit';
+import { SappSDK } from 'rpckit';
 import './app.less';
 import 'antd/dist/antd.css';
 import render, { unmount } from './main';

@@ -1,7 +1,7 @@
 import { AlertService } from '@example/first-children-decl';
 import React, { useState, useRef } from 'react';
 import { Button, Layout, message, Row, Space } from 'antd';
-import { Sapp, sappMGR } from 'servkit';
+import { Sapp, sappMGR } from 'rpckit';
 import { CHILD_FIRST_APP_ID, CHILD_SECOND_APP_ID, EXAMPLE_ASYNC_APP_ID } from '../constants';
 import SappContainer from './sapp-container';
 import { findIndex } from 'lodash';

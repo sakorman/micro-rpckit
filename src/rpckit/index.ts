@@ -1,2 +1,2 @@
-export * from './Servkit';
+export * from './Rpckit';
 export * from './ServGlobalServiceManager';

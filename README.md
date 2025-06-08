@@ -1,7 +1,7 @@
-# servkit
+# micro-rpckit
 主-从 应用架构的一种实现，目的是通过主应用提供的标准接口来实现从应用二次开发（二方/三方），以实现主应用的平台性开放能力。
 
-基于能力特性，servkit能够做：
+基于能力特性，micro-rpckit能够做：
 * 对于平台性的前端应用（通常是复杂的），可以做小程序基础框架和SDK；
 * 对于复杂的前端巨应用，可以做微前端的架构实践；
 * 对于简单的前端页面，可以作为基础的RPC通信库；
@@ -19,7 +19,7 @@
 * 声明式服务事件
 * RPC通信协议
 
-# 为什么要开发 servkit ?
+# 为什么要开发 micro-rpckit ?
 * GUI应用H5化
 
   在GUI程序的领域，传统的原生开发逐步被H5 WEB技术所取代，因为H5表现出了非常优秀的开发体验和生产效率，这在PC平台尤为明显；那么H5 WEB技术面临的是更为复杂的软件工程和系统程序。
@@ -31,14 +31,14 @@
   SAAS服务应该是开放的。对于范服务的提供商，通过提供开放能力，让上下游生态、周边生态、行业细分生态等能够接入，达到能力互补/能力创新（服务场景拓宽）；一体化是目的，开放和封闭都是实现路径，但是封闭的一体化方案，ROI可能较低，自建意味更多的人力、财力、时间，对于客户也缺少服务弹性。
 
 
-在这个背景下，在技术角度看，要应对的是巨型应用；在业务角度看，要应对的是开放能力。而这些也会是WEB领域发展的共性问题，所以servkit针对这些问题，尝试提供一个通用处理方案；巨型应用使用微前端架构（SOA）思路，开放能力使用小程序架构思路。
+在这个背景下，在技术角度看，要应对的是巨型应用；在业务角度看，要应对的是开放能力。而这些也会是WEB领域发展的共性问题，所以micro-rpckit针对这些问题，尝试提供一个通用处理方案；巨型应用使用微前端架构（SOA）思路，开放能力使用小程序架构思路。
 
 # 快速使用
 ## 安装
-`npm install servkit` 或者`yarn add servkit`
+`npm install micro-rpckit` 或者`yarn add micro-rpckit`
 
 ## 独立运行环境微应用（IFrame）
-IFrame页面间通信是最常见的场景，这种场景分为承载页（打开iframe页面）和内容页（iframe页面），servkit在这个场景提供了：
+IFrame页面间通信是最常见的场景，这种场景分为承载页（打开iframe页面）和内容页（iframe页面），micro-rpckit在这个场景提供了：
 * 语义化操作：iframe的打开、页面间通信，而无需关注底层琐碎代码的开发；
 * 规范化通信：基于提供的service机制，规范了RPC通信间协议，也提供了通信间的类型检测；
 
@@ -51,8 +51,8 @@ IFrame页面间通信是最常见的场景，这种场景分为承载页（打�
 
 ``` typescript
 // 在承载页面都通过sappMGR进行操作
-import { sappMGR } from 'servkit';
-import { CommonService } from 'servkit-service-decl';
+import { sappMGR } from 'micro-rpckit';
+import { CommonService } from 'micro-rpckit-service-decl';
 import { CommonServiceImpl } from './service/CommonServiceImpl';
 
 sappMGR.create(
@@ -98,7 +98,7 @@ sappMGR.create(
 ``` typescript
 // CommonService.ts
 // 服务声明通常单独放在一个npm包里面，能够给实现方和使用方进行共享使用
-import { ServService, ServEventer, anno, ServAPIArgs, ServAPIRetn, API_UNSUPPORT } from 'servkit';
+import { ServService, ServEventer, anno, ServAPIArgs, ServAPIRetn, API_UNSUPPORT } from 'micro-rpckit';
 
 // 声明一个服务class，该class定义了IFrame间的通信语义，类型声明
 @anno.decl({
@@ -128,8 +128,8 @@ export class CommonService extends ServService {
 ``` typescript
 // CommonService.ts
 // 服务声明通常单独放在一个npm包里面，能够给实现方和使用方进行共享使用
-import { CommonService } from 'servkit-service-decl';
-import { anno, ServAPIArgs, ServAPIRetn, API_SUCCEED, DeferredUtil } from 'servkit';
+import { CommonService } from 'micro-rpckit-service-decl';
+import { anno, ServAPIArgs, ServAPIRetn, API_SUCCEED, DeferredUtil } from 'micro-rpckit';
 // 通过antd实现message和confirm
 import message from 'antd/lib/message';
 import 'antd/lib/message/style/css';
@@ -167,8 +167,8 @@ export class CommonServiceImpl extends CommonService {
 启动页面:
 ``` typescript
 // 在内容页面都通过sappSDK进行操作
-import { sappSDK } from 'servkit';
-import { IFrameCommonService } from 'servkit-service-decl';
+import { sappSDK } from 'micro-rpckit';
+import { IFrameCommonService } from 'micro-rpckit-service-decl';
 import { IFrameCommonServiceImpl } from './service/CommonServiceImpl';
 
 sappSDK
@@ -197,8 +197,8 @@ sappSDK
 
 页面通信:
 ``` typescript
-import { sappSDK } from 'servkit';
-import { CommonService } from 'servkit-service-decl';
+import { sappSDK } from 'micro-rpckit';
+import { CommonService } from 'micro-rpckit-service-decl';
 
 // 获取服务
 const common = await sappSDK.service(CommonService);
@@ -207,10 +207,10 @@ common.message('调用服务');
 ```
 
 ### 双向通信
-这里只展示了从IFrame向承载页的单向通信，但**servkit提供了IFrame页面和承载页面的双向通信机制，IFrame自身也可以向承载页暴露服务**，具体使用与上述例子类似（不同点在于**承载页通过sappMGR.create后的app获取服务**）。
+这里只展示了从IFrame向承载页的单向通信，但**micro-rpckit提供了IFrame页面和承载页面的双向通信机制，IFrame自身也可以向承载页暴露服务**，具体使用与上述例子类似（不同点在于**承载页通过sappMGR.create后的app获取服务**）。
 
 ## 基座运行环境微应用
-基于基座应用上搭建微应用也是典型的场景，这里基座应用负责提供基础能力，而微应用以HTML片段（或者JSBundle链接）形式暴露，由基座应用进行管理，并运行在基座应用的上下文，利用基座应用的能力API做业务开发；针对两种场景，servkit做了归一化。
+基于基座应用上搭建微应用也是典型的场景，这里基座应用负责提供基础能力，而微应用以HTML片段（或者JSBundle链接）形式暴露，由基座应用进行管理，并运行在基座应用的上下文，利用基座应用的能力API做业务开发；针对两种场景，micro-rpckit做了归一化。
 
 相互间的关系：
 
@@ -221,8 +221,8 @@ common.message('调用服务');
 
 ``` typescript
 // 在承载页面都通过sappMGR进行操作
-import { sappMGR } from 'servkit';
-import { CommonService } from 'servkit-service-decl';
+import { sappMGR } from 'micro-rpckit';
+import { CommonService } from 'micro-rpckit-service-decl';
 import { CommonServiceImpl } from './service/CommonServiceImpl';
 
 sappMGR.create(
@@ -272,7 +272,7 @@ sappMGR.create(
 ``` typescript
 // CommonService.ts
 // 服务声明通常单独放在一个npm包里面，能够给实现方和使用方进行共享使用
-import { ServService, ServEventer, anno, ServAPIArgs, ServAPIRetn, API_UNSUPPORT } from 'servkit';
+import { ServService, ServEventer, anno, ServAPIArgs, ServAPIRetn, API_UNSUPPORT } from 'micro-rpckit';
 
 // 声明一个服务class，该class定义了IFrame间的通信语义，类型声明
 @anno.decl({
@@ -302,8 +302,8 @@ export class CommonService extends ServService {
 ``` typescript
 // CommonService.ts
 // 服务声明通常单独放在一个npm包里面，能够给实现方和使用方进行共享使用
-import { CommonService } from 'servkit-service-decl';
-import { anno, ServAPIArgs, ServAPIRetn, API_SUCCEED, DeferredUtil } from 'servkit';
+import { CommonService } from 'micro-rpckit-service-decl';
+import { anno, ServAPIArgs, ServAPIRetn, API_SUCCEED, DeferredUtil } from 'micro-rpckit';
 // 通过antd实现message和confirm
 import message from 'antd/lib/message';
 import 'antd/lib/message/style/css';
@@ -341,10 +341,10 @@ export class CommonServiceImpl extends CommonService {
 微应用启动:
 ``` typescript
 // 异步微应用需要通过SappSDK进行注册
-import { SappSDK } from 'servkit';
-import { IAsyncAppCommonService } from 'servkit-service-decl';
+import { SappSDK } from 'micro-rpckit';
+import { IAsyncAppCommonService } from 'micro-rpckit-service-decl';
 import { IAsyncAppCommonServiceImpl } from './service/CommonServiceImpl';
-import { CommonService } from 'servkit-service-decl';
+import { CommonService } from 'micro-rpckit-service-decl';
 
 // 注册异步应用，这里的id需要与基座应用中对应
 SappSDK.declAsyncLoad('demo.service.common', {
@@ -386,9 +386,9 @@ SappSDK.declAsyncLoad('demo.service.common', {
 ## 自带例子
 ```npm start```，基础例子演示
 
-## [servkit-example](https://github.com/QH-CUSTOM-TFE/servkit-example)
+## [micro-rpckit-example](https://github.com/QH-CUSTOM-TFE/micro-rpckit-example)
 
-基于servkit的一个完整微应用拆分例子，包括了iframe微应用和微应用（保持了独立的特性，但仍然在一个页面内）。
+基于micro-rpckit的一个完整微应用拆分例子，包括了iframe微应用和微应用（保持了独立的特性，但仍然在一个页面内）。
 
 # 为什么没有使用 qiankun、single-spa ?
 

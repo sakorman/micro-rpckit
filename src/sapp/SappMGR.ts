@@ -1,11 +1,11 @@
 import { Sapp, SappInfo, ESappCreatePolicy, ESappType, ESappLifePolicy } from './Sapp';
 import { SappController } from './SappController';
-import { Servkit, servkit } from '../servkit/Servkit';
+import { Rpckit, rpckit } from '../rpckit/Rpckit';
 import { SappDefaultIFrameController } from './SappDefaultIFrameController';
 import { SappShowParams, SappHideParams, SappCloseResult } from './service/m/SappLifecycle';
 import { nextUUID, asyncThrow, EServConstant } from '../common/common';
 import { SappPlainPage } from './SappPlainPage';
-import { ServGlobalServiceManager } from '../servkit/ServGlobalServiceManager';
+import { ServGlobalServiceManager } from '../rpckit/ServGlobalServiceManager';
 import { SappDefaultAsyncLoadController } from './SappDefaultAsyncLoadController';
 import { SappPreloader } from './SappPreloader';
 import { ServServiceConfig, ServServiceReferPattern } from '../service/ServServiceManager';
@@ -268,12 +268,12 @@ export interface SappCreateOptions {
  */
 export interface SappMGRConfig {
     /**
-     * SappMGR对应使用的servkit；默认使用全局servkit
+     * SappMGR对应使用的rpckit；默认使用全局rpckit
      *
-     * @type {Servkit}
+     * @type {Rpckit}
      * @memberof SappMGRConfig
      */
-    servkit?: Servkit;
+    rpckit?: Rpckit;
     /**
      * 通用的 Sapp Controler 构造函数
      *
@@ -370,8 +370,8 @@ export class SappMGR {
         return this.config;
     }
 
-    getServkit(): Servkit {
-        return this.config.servkit || servkit;
+    getRpckit(): Rpckit {
+        return this.config.rpckit || rpckit;
     }
 
     /**
@@ -381,7 +381,7 @@ export class SappMGR {
      * @memberof SappMGR
      */
     getService: ServGlobalServiceManager['getService'] = function(this: SappMGR) {
-        const serviceManager = this.getServkit().service;
+        const serviceManager = this.getRpckit().service;
         return serviceManager.getService.apply(serviceManager, arguments);
     };
 
@@ -392,7 +392,7 @@ export class SappMGR {
      * @memberof SappMGR
      */
     getServiceUnsafe: ServGlobalServiceManager['getServiceUnsafe'] = function(this: SappMGR) {
-        const serviceManager = this.getServkit().service;
+        const serviceManager = this.getRpckit().service;
         return serviceManager.getServiceUnsafe.apply(serviceManager, arguments);
     };
 
@@ -403,7 +403,7 @@ export class SappMGR {
      * @memberof SappMGR
      */
     service: ServGlobalServiceManager['service'] = function(this: SappMGR) {
-        const serviceManager = this.getServkit().service;
+        const serviceManager = this.getRpckit().service;
         return serviceManager.service.apply(serviceManager, arguments);
     };
 
@@ -414,7 +414,7 @@ export class SappMGR {
      * @memberof SappMGR
      */
     serviceExec: ServGlobalServiceManager['serviceExec'] = function(this: SappMGR) {
-        const serviceManager = this.getServkit().service;
+        const serviceManager = this.getRpckit().service;
         return serviceManager.serviceExec.apply(serviceManager, arguments);
     };
 
@@ -425,7 +425,7 @@ export class SappMGR {
      * @memberof SappMGR
      */
     addServices: ServGlobalServiceManager['addServices'] = function(this: SappMGR) {
-        const serviceManager = this.getServkit().service;
+        const serviceManager = this.getRpckit().service;
         return serviceManager.addServices.apply(serviceManager, arguments);
     };
 
@@ -436,7 +436,7 @@ export class SappMGR {
      * @memberof SappMGR
      */
     remServices: ServGlobalServiceManager['remServices'] = function(this: SappMGR) {
-        const serviceManager = this.getServkit().service;
+        const serviceManager = this.getRpckit().service;
         return serviceManager.remServices.apply(serviceManager, arguments);
     };
 

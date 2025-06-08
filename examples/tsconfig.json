@@ -5,10 +5,10 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "paths": {
-      "servkit": [
+      "rpckit": [
         "../src"
       ],
-      "servkit/*": [
+      "rpckit/*": [
         "../src/*"
       ],
       "@example/first-example-decl": ["packages/first-example-decl"],

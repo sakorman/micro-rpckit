@@ -1,4 +1,4 @@
-import { anno, API_UNSUPPORT, ServAPIRetn } from 'servkit';
+import { anno, API_UNSUPPORT, ServAPIRetn } from 'rpckit';
 import { ImessageServiceType, MessageService } from './message.service';
 
 @anno.decl({

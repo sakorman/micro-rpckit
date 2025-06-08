@@ -36,7 +36,7 @@ module.exports = {
 
     resolve: {
         alias: {
-            'servkit': path.resolve(__dirname, '../src/index.ts'),
+            'rpckit': path.resolve(__dirname, '../src/index.ts'),
         },
         extensions: ['.js', '.ts', '.d.ts', '.tsx', '.css'],
     },

@@ -1,5 +1,5 @@
 import { ImessageServiceType, Message2Service } from '@example/first-example-decl';
-import { anno, ServAPIRetn } from 'servkit';
+import { anno, ServAPIRetn } from 'rpckit';
 import { showAntdMessage } from './message.service.impl';
 
 const message2Prefix = 'message2';
