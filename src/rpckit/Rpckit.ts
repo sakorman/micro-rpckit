@@ -1,4 +1,3 @@
-import { asyncThrow } from '../common/common';
 import { EServTerminal, ServTerminal, ServTerminalConfig } from '../terminal/ServTerminal';
 import { ServGlobalServiceConfig, ServGlobalServiceManager } from './ServGlobalServiceManager';
 import { EventEmitter } from 'eventemitter3';
