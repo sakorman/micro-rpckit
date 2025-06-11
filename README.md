@@ -1,49 +1,276 @@
 # micro-rpckit
-主-从 应用架构的一种实现，目的是通过主应用提供的标准接口来实现从应用二次开发（二方/三方），以实现主应用的平台性开放能力。
 
-基于能力特性，micro-rpckit能够做：
-* 对于平台性的前端应用（通常是复杂的），可以做小程序基础框架和SDK；
-* 对于复杂的前端巨应用，可以做微前端的架构实践；
-* 对于简单的前端页面，可以作为基础的RPC通信库；
+一个基于主从架构的微前端 RPC 通信框架，专注于提供标准化的跨应用通信解决方案。
 
-能力特性：
-* 微应用架构：主应用-从应用
-* 三方应用开放能力
-  * 微应用
-    * 独立运行环境(iframe)
-    * 同一运行环境
-  * 定制化SDK
-  * 服务/API管理
-  * 权限管理：应用粒度、服务粒度、API粒度
-* 声明式服务API
-* 声明式服务事件
-* RPC通信协议
+## 特性
 
-# 为什么要开发 micro-rpckit ?
-* GUI应用H5化
+### 1. 主从架构
+* 清晰的主从应用分离
+* 标准化的 RPC 通信
+* 支持 iframe/同域运行环境
 
-  在GUI程序的领域，传统的原生开发逐步被H5 WEB技术所取代，因为H5表现出了非常优秀的开发体验和生产效率，这在PC平台尤为明显；那么H5 WEB技术面临的是更为复杂的软件工程和系统程序。
-* 云端化
-  
-  云端化将一直保持主旋律，当前在终端操作的软件系统会越来越多的向云端发展，而WEB技术作为云端的主要技术之一，WEB前端领域会面临更多传统软件系统的开发挑战，工程规模、系统复杂度、架构设计等（在工程化上已经能看到一些变化在应对这些挑战，比如TypeScript,Webpack等）。
-* 开放能力
-  
-  SAAS服务应该是开放的。对于范服务的提供商，通过提供开放能力，让上下游生态、周边生态、行业细分生态等能够接入，达到能力互补/能力创新（服务场景拓宽）；一体化是目的，开放和封闭都是实现路径，但是封闭的一体化方案，ROI可能较低，自建意味更多的人力、财力、时间，对于客户也缺少服务弹性。
+### 2. 服务管理
+* 声明式服务 API 定义
+* 类型安全的接口调用
+* 事件驱动通信
 
+### 3. 权限控制
+* 应用/服务/API 多级权限
+* 灵活的权限策略
+* 安全通信机制
 
-在这个背景下，在技术角度看，要应对的是巨型应用；在业务角度看，要应对的是开放能力。而这些也会是WEB领域发展的共性问题，所以micro-rpckit针对这些问题，尝试提供一个通用处理方案；巨型应用使用微前端架构（SOA）思路，开放能力使用小程序架构思路。
+## 系统架构
 
-# 快速使用
-## 安装
-`npm install micro-rpckit` 或者`yarn add micro-rpckit`
+### 核心组件
 
-## 独立运行环境微应用（IFrame）
-IFrame页面间通信是最常见的场景，这种场景分为承载页（打开iframe页面）和内容页（iframe页面），micro-rpckit在这个场景提供了：
-* 语义化操作：iframe的打开、页面间通信，而无需关注底层琐碎代码的开发；
-* 规范化通信：基于提供的service机制，规范了RPC通信间协议，也提供了通信间的类型检测；
+```
++------------------+     +------------------+     +------------------+
+|     Rpckit       |     |   ServTerminal   |     |   ServSession    |
+|  (RPC 核心管理)   |---->|  (终端实现)      |---->|  (会话管理)      |
++------------------+     +------------------+     +------------------+
+        |                        |                        |
+        v                        v                        v
++------------------+     +------------------+     +------------------+
+| ServServiceManager|     |  ServService     |     |  ServEventer     |
+|  (服务管理器)      |     |  (服务定义)      |     |  (事件管理)      |
++------------------+     +------------------+     +------------------+
+```
 
-相互间的关系：
+### 组件说明
 
-承载页 -> sappMGR -> service decl <- sappSDK <- IFrame
+1. **Rpckit**
+   * 框架核心类
+   * 管理终端实例
+   * 提供全局服务
+   * 处理生命周期
+
+2. **ServTerminal**
+   * 终端实现
+   * 管理通信通道
+   * 处理消息路由
+   * 维护会话状态
+
+3. **ServSession**
+   * 会话管理
+   * 连接状态维护
+   * 消息队列处理
+   * 超时控制
+
+4. **ServServiceManager**
+   * 服务注册与发现
+   * 服务版本管理
+   * 服务健康检查
+   * 服务降级处理
+
+5. **ServService**
+   * 服务定义
+   * API 实现
+   * 类型声明
+   * 权限控制
+
+6. **ServEventer**
+   * 事件管理
+   * 消息订阅
+   * 事件分发
+   * 状态同步
+
+### 通信流程
+
+```
+主应用                    从应用
++--------+              +--------+
+|  Rpckit|              |  Rpckit|
++--------+              +--------+
+    |                       |
+    v                       v
++--------+              +--------+
+|Terminal|              |Terminal|
++--------+              +--------+
+    |                       |
+    v                       v
++--------+              +--------+
+|Session |<------------>|Session |
++--------+              +--------+
+    |                       |
+    v                       v
++--------+              +--------+
+|Service |<------------>|Service |
++--------+              +--------+
+```
+
+1. **初始化流程**
+   * 创建 Rpckit 实例
+   * 初始化终端配置
+   * 建立会话连接
+   * 注册服务定义
+
+2. **通信流程**
+   * 服务调用请求
+   * 消息序列化
+   * 会话传输
+   * 响应处理
+
+3. **事件流程**
+   * 事件触发
+   * 消息广播
+   * 订阅处理
+   * 状态更新
+
+### 扩展机制
+
+1. **插件系统**
+   * 中间件支持
+   * 生命周期钩子
+   * 自定义扩展
+   * 能力增强
+
+2. **适配器**
+   * 运行环境适配
+   * 通信协议适配
+   * 数据格式适配
+   * 安全策略适配
+
+## 使用场景
+
+### 1. 微前端应用
+```typescript
+// 主应用
+const host = new SappSDK({
+    id: 'host-app',
+    type: 'master'
+});
+
+// 注册服务
+@ServService()
+class UserService {
+    @ServAPI()
+    async getUserInfo() {
+        return { name: 'John' };
+    }
+}
+
+// 从应用
+const slave = new SappSDK({
+    id: 'slave-app',
+    type: 'slave'
+});
+
+// 调用主应用服务
+const userService = await slave.getService('UserService');
+const userInfo = await userService.getUserInfo();
+```
+
+### 2. iframe 通信
+```typescript
+// 主应用
+const host = new SappSDK({
+    id: 'host-app',
+    type: 'master'
+});
+
+// 打开 iframe
+const iframe = await host.openIframe({
+    url: 'https://slave-app.com',
+    id: 'slave-1'
+});
+
+// 从应用
+const slave = new SappSDK({
+    id: 'slave-app',
+    type: 'slave'
+});
+
+// 监听主应用消息
+slave.on('message', async (message) => {
+    const hostService = await slave.getService('HostService');
+    return await hostService.handleMessage(message);
+});
+```
+
+### 3. 小程序开发
+```typescript
+// 平台应用
+const platform = new SappSDK({
+    id: 'platform-app',
+    type: 'master'
+});
+
+// 注册平台能力
+@ServService()
+class PlatformService {
+    @ServAPI()
+    async getLocation() {
+        return { lat: 0, lng: 0 };
+    }
+}
+
+// 小程序
+const miniApp = new SappSDK({
+    id: 'mini-app',
+    type: 'slave'
+});
+
+// 使用平台能力
+const platformService = await miniApp.getService('PlatformService');
+const location = await platformService.getLocation();
+```
+
+## 快速开始
+
+### 安装
+```bash
+npm install micro-rpckit
+# 或
+yarn add micro-rpckit
+```
+
+### 基础示例
+```typescript
+import { SappSDK, ServService, ServAPI } from 'micro-rpckit';
+
+// 创建应用实例
+const app = new SappSDK({
+    id: 'my-app',
+    type: 'master'
+});
+
+// 定义服务
+@ServService()
+class MyService {
+    @ServAPI()
+    async hello(name: string) {
+        return `Hello, ${name}!`;
+    }
+}
+
+// 初始化并启动
+await app.init();
+await app.start();
+```
+
+## 开发背景
+
+* **GUI 应用 H5 化**
+  * 传统原生应用向 H5 技术迁移
+  * 需要处理更复杂的软件工程问题
+  * 提供更好的开发体验和生产效率
+
+* **云端化趋势**
+  * 终端应用向云端迁移
+  * 需要处理大规模工程问题
+  * 提供更好的系统架构支持
+
+* **开放能力需求**
+  * 支持 SAAS 服务开放
+  * 提供标准化的接入方案
+  * 支持生态建设
+
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request。
+
+## 许可证
+
+MIT
 
 
