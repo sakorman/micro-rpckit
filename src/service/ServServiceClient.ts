@@ -103,7 +103,7 @@ export class ServServiceClient {
         : Promise<{ [key in keyof M]: IServClientService<M[key]> }>;
     service() {
         if (arguments.length === 0) {
-            return Promise.reject(new Error('[SERVKIT] Decl is empty'));
+            return Promise.reject(new Error('[RPCKIT] Decl is empty'));
         }
 
         const services = this.serviceExec(arguments[0], (v) => {

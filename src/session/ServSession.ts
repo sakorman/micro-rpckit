@@ -23,7 +23,7 @@ import { Deferred, DeferredUtil } from '../common/Deferred';
  */
 export enum EServSessionStatus {
     CLOSED = 0,    // 会话已关闭
-    OPENNING,      // 会话正在打开中
+    OPENING,      // 会话正在打开中
     OPENED,        // 会话已打开并可用
 }
 
@@ -43,7 +43,7 @@ export interface ServSessionConfig {
     checkSession?: boolean;  // 是否启用会话状态检查
     checkOptions?: ServSessionCheckerStartOptions;  // 会话检查的配置选项
     channel: {
-        type: EServChannel | typeof ServChannel;  // 通信通道类型
+        type: EServChannel | (new () => ServChannel);  // 通信通道类型
         config?: ServChannelConfig | ServWindowChannelConfig | ServMessageChannelConfig | ServEventChannelConfig;  // 通道配置
     };
 }
@@ -110,8 +110,8 @@ interface PendingMessage {
 export class ServSession {
     protected terminal: ServTerminal;  // 终端实例
     protected status: EServSessionStatus;  // 当前会话状态
-    protected openningPromise?: Promise<void>;  // 打开会话的Promise
-    protected openningCancel?: (() => void);  // 取消打开会话的函数
+    protected openingPromise?: Promise<void>;  // 打开会话的Promise
+    protected openingCancel?: (() => void);  // 取消打开会话的函数
     protected channel: ServChannel;  // 通信通道实例
     protected onRecvListeners: ServSessionOnRecvMessageListener[];  // 消息接收监听器列表
     protected onRecvCallListeners: ServSessionOnRecvCallMessageListener[];  // 调用消息接收监听器列表
@@ -180,12 +180,14 @@ export class ServSession {
             [EServChannel.MESSAGE]: ServMessageChannel,
             [EServChannel.EVENT_LOADER]: ServEventLoaderChannel,
         };
-        const cls = typeof config.type === 'function' ? config.type : type2cls[config.type] ;
-        if (!cls) {
-            throw new Error('[SERVKIT] Unknown channel type');
+        // 根据配置的通道类型获取对应的通道类
+        // 支持直接传入通道类或使用预定义的通道类型枚举
+        const channelClass = typeof config.type === 'function' ? config.type : type2cls[config.type] ;
+        if (!channelClass) {
+            throw new Error('[RPCKIT] Unknown channel type');
         }
 
-        this.channel = new (cls as any)();
+        this.channel = new channelClass();
         this.channel.init(this, config.config);
     }
 
@@ -230,12 +232,12 @@ export class ServSession {
     open(options?: ServSessionOpenOptions): Promise<void> {
         // 如果会话已经在打开或已打开状态，则返回现有的Promise
         if (this.status > EServSessionStatus.CLOSED) {
-            logSession(this, 'OPEN WHILE ' + (this.status === EServSessionStatus.OPENNING ? 'OPENNING' : 'OPENED') );
-            return this.openningPromise || Promise.reject(new Error('unknown'));
+            logSession(this, 'OPEN WHILE ' + (this.status === EServSessionStatus.OPENING ? 'OPENING' : 'OPENED') );
+            return this.openingPromise || Promise.reject(new Error('unknown'));
         }
 
-        this.status = EServSessionStatus.OPENNING;
-        logSession(this, 'OPENNING');
+        this.status = EServSessionStatus.OPENING;
+        logSession(this, 'OPENING');
 
         // 安全处理函数，确保操作只执行一次
         let done = false;
@@ -245,7 +247,7 @@ export class ServSession {
                 return;
             }
             done = true;
-            this.openningCancel = undefined;
+            this.openingCancel = undefined;
             if (timer) {
                 clearTimeout(timer);
                 timer = 0;
@@ -258,7 +260,7 @@ export class ServSession {
         const pTimeout = timeout > 0 ? new Promise<void>((resolve, reject) => {
             timer = setTimeout(() => {
                 doSafeWork(() => {
-                    logSession(this, 'OPENNING TIMEOUT');
+                    logSession(this, 'OPENING TIMEOUT');
                     reject(new Error('timeout'));
                     this.close();
                 });
@@ -282,7 +284,7 @@ export class ServSession {
             });
         }, (e) => {
             doSafeWork(() => {
-                logSession(this, 'OPENNING FAILED', e);
+                logSession(this, 'OPENING FAILED', e);
                 this.status = EServSessionStatus.CLOSED;
             });
             return Promise.reject(e);
@@ -290,9 +292,9 @@ export class ServSession {
 
         // 设置取消处理
         const pCancel = new Promise<void>((resolve, reject) => {
-            this.openningCancel = () => {
+            this.openingCancel = () => {
                 doSafeWork(() => {
-                    logSession(this, 'OPENNING CANCELLED');
+                    logSession(this, 'OPENING CANCELLED');
                     reject(new Error('cancel'));
                     this.close();
                 });
@@ -304,7 +306,7 @@ export class ServSession {
         if (pTimeout) {
             promises.push(pTimeout);
         }
-        this.openningPromise = Promise.race(promises);
+        this.openingPromise = Promise.race(promises);
 
         // 启动会话检查
         const sessionChecker = pTimeout ? this.sessionChecker : undefined;
@@ -313,7 +315,7 @@ export class ServSession {
         }
 
         // 返回Promise并处理后续操作
-        return this.openningPromise.then(() => {
+        return this.openingPromise.then(() => {
             this.flushPendingQueue();
             if (sessionChecker) {
                 sessionChecker.startChecking();
@@ -336,10 +338,10 @@ export class ServSession {
         this.status = EServSessionStatus.CLOSED;
         
         this.flushPendingQueue();
-        this.openningPromise = undefined;
+        this.openingPromise = undefined;
 
-        if (this.openningCancel) {
-            this.openningCancel();
+        if (this.openingCancel) {
+            this.openingCancel();
         }
 
         if (this.sessionChecker) {
@@ -355,7 +357,7 @@ export class ServSession {
     sendMessage(msg: ServMessage): Promise<void> {
         // 如果会话未打开，则加入待处理队列
         if (this.status !== EServSessionStatus.OPENED) {
-            if (this.status === EServSessionStatus.OPENNING) {
+            if (this.status === EServSessionStatus.OPENING) {
                 const pending = {
                     isSend: true,
                     message: msg,
@@ -434,7 +436,7 @@ export class ServSession {
      */
     recvPackage(pkg: ServSessionPackage): void {
         if (this.status !== EServSessionStatus.OPENED) {
-            if (this.status === EServSessionStatus.OPENNING) {
+            if (this.status === EServSessionStatus.OPENING) {
                 const pending = {
                     message: pkg,
                 };

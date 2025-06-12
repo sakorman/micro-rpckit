@@ -1,6 +1,6 @@
 import { asyncThrow } from './common';
 
-const QUERY_PARAMS_KEY = '__SERVKIT_QUERY_PARAMS__';
+const QUERY_PARAMS_KEY = '__RPCKIT_QUERY_PARAMS__';
 
 export function wrapServQueryParams(url: string, params: any) {
     const query = generateServQueryParams(params);

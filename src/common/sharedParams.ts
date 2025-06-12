@@ -12,10 +12,10 @@ if (!sharedParams) {
     target.__$rpckit_sharedParams = sharedParams;
 }
 
-const DEFAULT_SERVKIT_NAMESPACE = '__DEFAULT_SERVKIT__';
+const DEFAULT_RPCKIT_NAMESPACE = '__DEFAULT_RPCKIT__';
 
 function getParamsPool(rpckit: Rpckit, create?: boolean) {
-    const namesapce = rpckit.namespace || DEFAULT_SERVKIT_NAMESPACE;
+    const namesapce = rpckit.namespace || DEFAULT_RPCKIT_NAMESPACE;
     let pool = sharedParams[namesapce];
     if (!pool && create) {
         pool = {};
@@ -26,7 +26,7 @@ function getParamsPool(rpckit: Rpckit, create?: boolean) {
 }
 
 function delParamsPool(rpckit: Rpckit, create?: boolean) {
-    const namesapce = rpckit.namespace || DEFAULT_SERVKIT_NAMESPACE;
+    const namesapce = rpckit.namespace || DEFAULT_RPCKIT_NAMESPACE;
     delete sharedParams[namesapce];
 }
 

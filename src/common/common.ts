@@ -10,7 +10,7 @@ export const Env = {
 try {
     if ((window as any).__$$rpckit) {
         // tslint:disable-next-line:no-console
-        console.warn('\n\nSERVKIT WARNING!\n\nYOU HAVE MULTIPLE VERSIONS OF SERVKIT INSTALLED IN YOUR PROJECT!\n');
+        console.warn('\n\nRPCKIT WARNING!\n\nYOU HAVE MULTIPLE VERSIONS OF RPCKIT INSTALLED IN YOUR PROJECT!\n');
     }
     const LOCAL_ENV = '__$$rpckit';
     const __$$rpckit = {
@@ -72,7 +72,7 @@ export function setServConstant(constans: Partial<typeof EServConstant>) {
 }
 
 function logSessionImpl(session: ServSession, ...args: any[]) {
-    const tag = `[SERVKIT][${session.getID()}][${session.isMaster() ? 'M' : 'S'}] `;
+    const tag = `[RPCKIT][${session.getID()}][${session.isMaster() ? 'M' : 'S'}] `;
     let arg0 = args[0];
     if (typeof arg0 === 'string') {
         arg0 = tag + arg0;
@@ -85,7 +85,7 @@ function logSessionImpl(session: ServSession, ...args: any[]) {
 }
 
 function logServerACLImpl(server: ServServiceServer, ...args: any[]) {
-    const tag = `[SERVKIT][${server.terminal.id}][${server.terminal.isMaster() ? 'M' : 'S'}] `;
+    const tag = `[RPCKIT][${server.terminal.id}][${server.terminal.isMaster() ? 'M' : 'S'}] `;
     let arg0 = args[0];
     if (typeof arg0 === 'string') {
         arg0 = tag + arg0;
@@ -130,7 +130,7 @@ export function asyncThrow(error: any) {
 }
 
 export function asyncThrowMessage(msg: string) {
-    msg = `[SERVKIT] ${msg}`;
+    msg = `[RPCKIT] ${msg}`;
     asyncThrow(new Error(msg));
 }
 

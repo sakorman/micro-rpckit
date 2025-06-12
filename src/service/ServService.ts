@@ -494,11 +494,11 @@ const decl: ServAnnoDecl = ((options: ServDeclOptions) => {
             }
 
             if (!options.id) {
-                throw new Error('[SERVKIT] id is empty in service declaration');
+                throw new Error('[RPCKIT] id is empty in service declaration');
             }
 
             if (!options.version) {
-                throw new Error(`[SERVKIT] version is empty in ${options.id} service declaration`);
+                throw new Error(`[RPCKIT] version is empty in ${options.id} service declaration`);
             }
 
             metas.id = options.id;

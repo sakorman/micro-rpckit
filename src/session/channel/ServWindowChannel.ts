@@ -203,7 +203,7 @@ export class ServWindowChannel extends ServChannel {
     protected attachMessageChannel() {
         const chnWindow = this.windowInfo.window;
         if (!chnWindow) {
-            asyncThrow(new Error('[SERVKIT] No window, attachMessageChannel failed.'));
+            asyncThrow(new Error('[RPCKIT] No window, attachMessageChannel failed.'));
             return;
         }
 
@@ -228,7 +228,7 @@ export class ServWindowChannel extends ServChannel {
     protected sendChannelPackage(msg: ServChannelPackage): boolean {
         const targetWindow = this.windowInfo.target;
         if (!targetWindow) {
-            asyncThrow(new Error('[SERVKIT] No target window, package send failed.'));
+            asyncThrow(new Error('[RPCKIT] No target window, package send failed.'));
             return false;
         }
 

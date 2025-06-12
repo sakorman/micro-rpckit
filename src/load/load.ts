@@ -81,7 +81,7 @@ export class LoadUtil {
         }
 
         if (!content) {
-            return Promise.reject(new Error('[SERVKIT] html is invalid for html loader'));
+            return Promise.reject(new Error('[RPCKIT] html is invalid for html loader'));
         }
 
         const assets = processTpl(content, defaultGetPublicPath(url || window.location.href));

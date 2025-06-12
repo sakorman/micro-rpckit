@@ -5,7 +5,7 @@ const DUMMY_UNLISTENER: ServEventUnListener = () => undefined;
 
 class Eventer implements ServEventer {
     static generateRawEvent(service: string, event: string) {
-        return `SERVKIT#${service}#${event}`;
+        return `RPCKIT#${service}#${event}`;
     }
 
     service: string;
