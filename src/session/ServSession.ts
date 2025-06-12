@@ -1,3 +1,9 @@
+/**
+ * ServSession.ts
+ * 会话管理模块 - 负责处理RPC通信的核心会话管理
+ * 提供会话的创建、维护、消息收发等功能
+ */
+
 import { asyncThrow, EServConstant, logSession } from '../common/common';
 import { ServSessionCallMessageCreator } from '../message/creator';
 import { ServMessageContextManager } from '../message/ServMessageContextManager';
@@ -11,74 +17,122 @@ import { ServSessionChecker, ServSessionCheckerStartOptions } from './ServSessio
 import { ServEventLoaderChannel } from './channel/ServEventLoaderChannel';
 import { Deferred, DeferredUtil } from '../common/Deferred';
 
+/**
+ * 会话状态枚举
+ * 用于标识会话的当前状态
+ */
 export enum EServSessionStatus {
-    CLOSED = 0,
-    OPENNING,
-    OPENED,
+    CLOSED = 0,    // 会话已关闭
+    OPENNING,      // 会话正在打开中
+    OPENED,        // 会话已打开并可用
 }
 
+/**
+ * 会话调用选项接口
+ * 用于配置远程方法调用的参数
+ */
 export interface ServSessionCallOptions {
-    timeout?: number;
+    timeout?: number;  // 调用超时时间（毫秒）
 }
 
+/**
+ * 会话配置接口
+ * 用于初始化会话时的配置参数
+ */
 export interface ServSessionConfig {
-    checkSession?: boolean;
-    checkOptions?: ServSessionCheckerStartOptions;
+    checkSession?: boolean;  // 是否启用会话状态检查
+    checkOptions?: ServSessionCheckerStartOptions;  // 会话检查的配置选项
     channel: {
-        type: EServChannel | typeof ServChannel;
-        config?: ServChannelConfig | ServWindowChannelConfig | ServMessageChannelConfig | ServEventChannelConfig;
+        type: EServChannel | typeof ServChannel;  // 通信通道类型
+        config?: ServChannelConfig | ServWindowChannelConfig | ServMessageChannelConfig | ServEventChannelConfig;  // 通道配置
     };
 }
 
+/**
+ * 会话打开选项接口
+ * 用于配置会话打开时的参数
+ */
 export interface ServSessionOpenOptions {
-    timeout?: number;
-    waiting?: Promise<void>;
+    timeout?: number;  // 打开超时时间（毫秒）
+    waiting?: Promise<void>;  // 等待Promise，用于同步等待其他操作完成
 }
 
+/**
+ * 会话消息包类型
+ * 用于在会话间传递的消息格式
+ */
 export type ServSessionPackage = ServMessage;
 
+/**
+ * 会话监听器接口
+ * 用于接收会话数据的回调接口
+ */
 export interface ServSessionListener {
-    onRecvData<T>(data: any): boolean;
+    onRecvData<T>(data: any): boolean;  // 接收数据的回调方法
 }
 
+/**
+ * 会话消息接收监听器类型
+ * 用于处理接收到的消息的回调函数
+ */
 export type ServSessionOnRecvMessageListener = (
-    message: ServMessage,
-    session: ServSession,
-    terminal: ServTerminal,
+    message: ServMessage,  // 接收到的消息
+    session: ServSession,  // 当前会话实例
+    terminal: ServTerminal,  // 终端实例
 ) => boolean;
 
+/**
+ * 会话调用消息接收监听器类型
+ * 用于处理远程方法调用的回调函数
+ */
 export type ServSessionOnRecvCallMessageListener = (
-    type: string,
-    args: any,
-    doReturn: ((data?: any, error?: any) => void),
-    session: ServSession,
-    terminal: ServTerminal,
+    type: string,  // 调用类型
+    args: any,  // 调用参数
+    doReturn: ((data?: any, error?: any) => void),  // 返回结果的回调函数
+    session: ServSession,  // 当前会话实例
+    terminal: ServTerminal,  // 终端实例
 ) => boolean;
 
+/**
+ * 待处理消息接口
+ * 用于存储待处理的消息信息
+ */
 interface PendingMessage {
-    isSend?: boolean;
-    sendDeferred?: Deferred;
-    message: ServMessage;
+    isSend?: boolean;  // 是否是发送消息
+    sendDeferred?: Deferred;  // 发送延迟对象，用于异步处理
+    message: ServMessage;  // 消息内容
 }
 
+/**
+ * 会话管理类
+ * 负责管理RPC通信会话的核心类
+ */
 export class ServSession {
-    protected terminal: ServTerminal;
-    protected status: EServSessionStatus;
-    protected openningPromise?: Promise<void>;
-    protected openningCancel?: (() => void);
-    protected channel: ServChannel;
-    protected onRecvListeners: ServSessionOnRecvMessageListener[];
-    protected onRecvCallListeners: ServSessionOnRecvCallMessageListener[];
-    protected messageContextManager: ServMessageContextManager;
-    protected sessionChecker?: ServSessionChecker;
-    protected sessionCheckOptions?: ServSessionCheckerStartOptions;
-    protected pendingQueue: PendingMessage[];
+    protected terminal: ServTerminal;  // 终端实例
+    protected status: EServSessionStatus;  // 当前会话状态
+    protected openningPromise?: Promise<void>;  // 打开会话的Promise
+    protected openningCancel?: (() => void);  // 取消打开会话的函数
+    protected channel: ServChannel;  // 通信通道实例
+    protected onRecvListeners: ServSessionOnRecvMessageListener[];  // 消息接收监听器列表
+    protected onRecvCallListeners: ServSessionOnRecvCallMessageListener[];  // 调用消息接收监听器列表
+    protected messageContextManager: ServMessageContextManager;  // 消息上下文管理器
+    protected sessionChecker?: ServSessionChecker;  // 会话检查器
+    protected sessionCheckOptions?: ServSessionCheckerStartOptions;  // 会话检查配置
+    protected pendingQueue: PendingMessage[];  // 待处理消息队列
 
+    /**
+     * 构造函数
+     * @param terminal 终端实例
+     */
     constructor(terminal: ServTerminal) {
         this.terminal = terminal;
         this.pendingQueue = [];
     }
 
+    /**
+     * 初始化会话
+     * @param config 会话配置
+     */
     init(config: ServSessionConfig) {
         this.status = EServSessionStatus.CLOSED;
         this.onRecvListeners = [];
@@ -87,11 +141,13 @@ export class ServSession {
         this.messageContextManager = new ServMessageContextManager();
         this.messageContextManager.init();
 
+        // 如果配置了会话检查，则初始化会话检查器
         if (config.checkSession) {
             const options = config.checkOptions || {};
             this.sessionCheckOptions = options;
             this.sessionChecker = new ServSessionChecker(this);
 
+            // 设置默认的会话断开处理函数
             if (!options.onBroken) {
                 options.onBroken = (session) => {
                     session.close();
@@ -100,6 +156,10 @@ export class ServSession {
         }
     }
 
+    /**
+     * 释放资源
+     * 清理会话相关的所有资源
+     */
     release() {
         this.close();
         this.messageContextManager.release();
@@ -108,7 +168,12 @@ export class ServSession {
         this.onRecvCallListeners = [];
     }
 
+    /**
+     * 初始化通信通道
+     * @param config 通道配置
+     */
     protected initChannel(config: ServSessionConfig['channel']) {
+        // 通道类型映射表
         const type2cls = {
             [EServChannel.WINDOW]: ServWindowChannel,
             [EServChannel.EVENT]: ServEventChannel,
@@ -124,25 +189,46 @@ export class ServSession {
         this.channel.init(this, config.config);
     }
 
+    /**
+     * 释放通信通道
+     */
     protected releaseChannel() {
         this.channel.release();
     }
 
+    /**
+     * 判断是否是主终端
+     * @returns 是否是主终端
+     */
     isMaster() {
         return this.terminal.isMaster();
     }
 
+    /**
+     * 获取会话ID
+     * @returns 会话ID
+     */
     getID() {
         return this.terminal.rpckit.namespace
                 ? this.terminal.rpckit.namespace + '-' + this.terminal.id
                 : this.terminal.id;
     }
 
+    /**
+     * 判断会话是否已打开
+     * @returns 是否已打开
+     */
     isOpened() {
         return this.status === EServSessionStatus.OPENED;
     }
 
+    /**
+     * 打开会话
+     * @param options 打开选项
+     * @returns Promise<void>
+     */
     open(options?: ServSessionOpenOptions): Promise<void> {
+        // 如果会话已经在打开或已打开状态，则返回现有的Promise
         if (this.status > EServSessionStatus.CLOSED) {
             logSession(this, 'OPEN WHILE ' + (this.status === EServSessionStatus.OPENNING ? 'OPENNING' : 'OPENED') );
             return this.openningPromise || Promise.reject(new Error('unknown'));
@@ -151,6 +237,7 @@ export class ServSession {
         this.status = EServSessionStatus.OPENNING;
         logSession(this, 'OPENNING');
 
+        // 安全处理函数，确保操作只执行一次
         let done = false;
         let timer = 0;
         const doSafeWork = (work: any) => {
@@ -166,6 +253,7 @@ export class ServSession {
             work();
         };
 
+        // 设置超时处理
         const timeout = (options && options.timeout) || EServConstant.SERV_SESSION_OPEN_TIMEOUT;
         const pTimeout = timeout > 0 ? new Promise<void>((resolve, reject) => {
             timer = setTimeout(() => {
@@ -177,6 +265,7 @@ export class ServSession {
             }, timeout) as any;
         }) : undefined;
 
+        // 打开通道
         let openPromise = this.channel.open({
             dontWaitSlaveEcho: !pTimeout,
         });
@@ -185,6 +274,7 @@ export class ServSession {
             openPromise = Promise.all([openPromise, waiting]) as any as Promise<void>;
         }
 
+        // 处理打开结果
         const p = openPromise.then(() => {
             doSafeWork(() => {
                 logSession(this, 'OPENNED');
@@ -198,6 +288,7 @@ export class ServSession {
             return Promise.reject(e);
         });
 
+        // 设置取消处理
         const pCancel = new Promise<void>((resolve, reject) => {
             this.openningCancel = () => {
                 doSafeWork(() => {
@@ -207,27 +298,32 @@ export class ServSession {
                 });
             };
         });
+
+        // 合并所有Promise
         const promises = [p, pCancel];
         if (pTimeout) {
             promises.push(pTimeout);
         }
         this.openningPromise = Promise.race(promises);
 
+        // 启动会话检查
         const sessionChecker = pTimeout ? this.sessionChecker : undefined;
-
         if (sessionChecker) {
             sessionChecker.start(this.sessionCheckOptions);
         }
 
+        // 返回Promise并处理后续操作
         return this.openningPromise.then(() => {
             this.flushPendingQueue();
-
             if (sessionChecker) {
                 sessionChecker.startChecking();
             }
         });
     }
 
+    /**
+     * 关闭会话
+     */
     close() {
         if (this.status <= EServSessionStatus.CLOSED) {
             logSession(this, 'CLOSE WHILE CLOSED');
@@ -251,7 +347,13 @@ export class ServSession {
         }
     }
 
+    /**
+     * 发送消息
+     * @param msg 要发送的消息
+     * @returns Promise<void>
+     */
     sendMessage(msg: ServMessage): Promise<void> {
+        // 如果会话未打开，则加入待处理队列
         if (this.status !== EServSessionStatus.OPENED) {
             if (this.status === EServSessionStatus.OPENNING) {
                 const pending = {
@@ -272,12 +374,6 @@ export class ServSession {
             logSession(this, 'Send', msg);
         }
         
-        // const pkg: ServSessionPackage = {
-        //     $msg: msg,
-        //     $sid: this.id,
-        //     $stp: this.type,
-        // };
-
         const ret = this.channel.send(msg);
 
         if (!ret) {
@@ -287,6 +383,13 @@ export class ServSession {
         return Promise.resolve();
     }
 
+    /**
+     * 调用远程方法
+     * @param type 调用类型
+     * @param args 调用参数
+     * @param options 调用选项
+     * @returns Promise<T>
+     */
     callMessage<T = any>(type: string, args?: any, options?: ServSessionCallOptions): Promise<T> {
         const message = ServSessionCallMessageCreator.create(type, args);
         let timeout: number = undefined!;
@@ -312,6 +415,11 @@ export class ServSession {
         return promise;
     }
 
+    /**
+     * 处理返回消息
+     * @param message 返回消息
+     * @returns boolean
+     */
     protected handleReturnMessage(message: ServSessionCallReturnMessage): boolean {
         if (message.error) {
             return this.messageContextManager.failed(message.$id, message.error);
@@ -320,6 +428,10 @@ export class ServSession {
         }
     }
 
+    /**
+     * 接收消息包
+     * @param pkg 消息包
+     */
     recvPackage(pkg: ServSessionPackage): void {
         if (this.status !== EServSessionStatus.OPENED) {
             if (this.status === EServSessionStatus.OPENNING) {
@@ -339,22 +451,15 @@ export class ServSession {
             return;
         }
 
-        // if (pkg.$sid !== this.id) {
-        //     return;
-        // }
-
-        // if (this.type === EServSession.MASTER && pkg.$stp !== EServSession.SLAVE) {
-        //     return;
-        // }
-
-        // if (this.type === EServSession.SLAVE && pkg.$stp !== EServSession.MASTER) {
-        //     return;
-        // }
-
         this.dispatchMessage(pkg);
     }
 
+    /**
+     * 分发消息
+     * @param msg 消息
+     */
     protected dispatchMessage(msg: ServMessage): void {
+        // 处理心跳消息
         if (this.sessionChecker && msg.$type === EServMessage.SESSION_HEARTBREAK) {
             this.sessionChecker.handleEchoMessage(msg);
             return;
@@ -362,11 +467,13 @@ export class ServSession {
 
         logSession(this, 'Recv', msg);
         
+        // 处理返回消息
         if (ServSessionCallMessageCreator.isCallReturnMessage(msg)) {
             this.handleReturnMessage(msg);
             return;
         }
 
+        // 处理调用消息
         if (ServSessionCallMessageCreator.isCallMessage(msg)) {
             const callMsg = msg as ServSessionCallMessage;
             const doReturn = (data: any, error: any) => {
@@ -389,6 +496,7 @@ export class ServSession {
             return;
         }
 
+        // 处理普通消息
         if (this.onRecvListeners.length !== 0) {
             const listeners = this.onRecvListeners;
             for (let i = 0, iz = listeners.length; i < iz; ++i) {
@@ -401,6 +509,11 @@ export class ServSession {
         }
     }
 
+    /**
+     * 注册消息接收监听器
+     * @param listener 监听器函数
+     * @returns 取消监听的函数
+     */
     onRecvMessage(listener: ServSessionOnRecvMessageListener): () => void {
         const ret = () => {
             const i = this.onRecvListeners.indexOf(listener);
@@ -415,6 +528,11 @@ export class ServSession {
         return ret;
     }
 
+    /**
+     * 注册调用消息接收监听器
+     * @param listener 监听器函数
+     * @returns 取消监听的函数
+     */
     onRecvCallMessage(listener: ServSessionOnRecvCallMessageListener): () => void {
         const ret = () => {
             const i = this.onRecvCallListeners.indexOf(listener);
@@ -429,6 +547,10 @@ export class ServSession {
         return ret;
     }
 
+    /**
+     * 处理待处理消息队列
+     * 在会话状态改变时处理队列中的消息
+     */
     protected flushPendingQueue() {
         const pendingQueue = this.pendingQueue;
         this.pendingQueue = [];
