@@ -58,12 +58,12 @@ export class ServTerminal {
         delete this.extData;
     }
 
-    setExtData<T = any>(data: T) {
+    setExtData<T>(data: T) {
         this.extData = data;
     }
 
-    getExtData<T = any>(): T {
-        return this.extData;
+    getExtData<T>(): T {
+        return this.extData as T;
     }
 
     openSession(options?: ServSessionOpenOptions) {

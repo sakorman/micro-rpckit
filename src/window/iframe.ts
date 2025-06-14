@@ -115,13 +115,13 @@ export class IFrameUtil {
                     
                     // 设置基本属性
                     element.src = typeof config.url === 'function' ? config.url() : config.url;
-                    if (config.id) element.id = config.id;
-                    if (config.className) element.className = config.className;
+                    if (config.id) {element.id = config.id;}
+                    if (config.className) {element.className = config.className;}
                     
                     // 设置安全属性
-                    if (config.sandbox) element.sandbox = config.sandbox;
-                    if (config.allow) element.allow = config.allow;
-                    if (config.loading) element.loading = config.loading;
+                    if (config.sandbox) {element.sandbox = config.sandbox;}
+                    if (config.allow) {element.allow = config.allow;}
+                    if (config.loading) {element.loading = config.loading;}
 
                     // 应用样式
                     if (config.style) {

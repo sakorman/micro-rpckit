@@ -44,7 +44,10 @@ export interface ServSessionConfig {
     checkOptions?: ServSessionCheckerStartOptions;  // 会话检查的配置选项
     channel: {
         type: EServChannel | (new () => ServChannel);  // 通信通道类型
-        config?: ServChannelConfig | ServWindowChannelConfig | ServMessageChannelConfig | ServEventChannelConfig;  // 通道配置
+        config?: ServChannelConfig 
+                | ServWindowChannelConfig 
+                | ServMessageChannelConfig 
+                | ServEventChannelConfig;  // 通道配置
     };
 }
 
@@ -68,7 +71,7 @@ export type ServSessionPackage = ServMessage;
  * 用于接收会话数据的回调接口
  */
 export interface ServSessionListener {
-    onRecvData<T>(data: any): boolean;  // 接收数据的回调方法
+    onRecvData(data: any): boolean;  // 接收数据的回调方法
 }
 
 /**
@@ -183,9 +186,6 @@ export class ServSession {
         // 根据配置的通道类型获取对应的通道类
         // 支持直接传入通道类或使用预定义的通道类型枚举
         const channelClass = typeof config.type === 'function' ? config.type : type2cls[config.type] ;
-        if (!channelClass) {
-            throw new Error('[RPCKIT] Unknown channel type');
-        }
 
         this.channel = new channelClass();
         this.channel.init(this, config.config);
@@ -212,8 +212,8 @@ export class ServSession {
      */
     getID() {
         return this.terminal.rpckit.namespace
-                ? this.terminal.rpckit.namespace + '-' + this.terminal.id
-                : this.terminal.id;
+            ? this.terminal.rpckit.namespace + '-' + this.terminal.id
+            : this.terminal.id;
     }
 
     /**
@@ -230,22 +230,16 @@ export class ServSession {
      * @returns Promise<void>
      */
     open(options?: ServSessionOpenOptions): Promise<void> {
-        // 如果会话已经在打开或已打开状态，则返回现有的Promise
         if (this.status > EServSessionStatus.CLOSED) {
-            logSession(this, 'OPEN WHILE ' + (this.status === EServSessionStatus.OPENING ? 'OPENING' : 'OPENED') );
+            logSession(this, 'OPEN WHILE ' + (this.status === EServSessionStatus.OPENING ? 'OPENING' : 'OPENED'));
             return this.openingPromise || Promise.reject(new Error('unknown'));
         }
-
         this.status = EServSessionStatus.OPENING;
         logSession(this, 'OPENING');
-
-        // 安全处理函数，确保操作只执行一次
         let done = false;
         let timer = 0;
-        const doSafeWork = (work: any) => {
-            if (done) {
-                return;
-            }
+        const doSafeWork = (work: () => void) => {
+            if (done) {return;}
             done = true;
             this.openingCancel = undefined;
             if (timer) {
@@ -254,20 +248,16 @@ export class ServSession {
             }
             work();
         };
-
-        // 设置超时处理
         const timeout = (options && options.timeout) || EServConstant.SERV_SESSION_OPEN_TIMEOUT;
-        const pTimeout = timeout > 0 ? new Promise<void>((resolve, reject) => {
+        const pTimeout = timeout > 0 ? new Promise<void>((_, reject) => {
             timer = setTimeout(() => {
                 doSafeWork(() => {
                     logSession(this, 'OPENING TIMEOUT');
                     reject(new Error('timeout'));
                     this.close();
                 });
-            }, timeout) as any;
+            }, timeout) as unknown as number;
         }) : undefined;
-
-        // 打开通道
         let openPromise = this.channel.open({
             dontWaitSlaveEcho: !pTimeout,
         });
@@ -275,23 +265,19 @@ export class ServSession {
             const waiting = options.waiting.catch(() => undefined);
             openPromise = Promise.all([openPromise, waiting]) as any as Promise<void>;
         }
-
-        // 处理打开结果
         const p = openPromise.then(() => {
             doSafeWork(() => {
                 logSession(this, 'OPENNED');
                 this.status = EServSessionStatus.OPENED;
             });
-        }, (e) => {
+        }, (e: unknown) => {
             doSafeWork(() => {
                 logSession(this, 'OPENING FAILED', e);
                 this.status = EServSessionStatus.CLOSED;
             });
-            return Promise.reject(e);
+            return Promise.reject(e instanceof Error ? e : new Error(String(e)));
         });
-
-        // 设置取消处理
-        const pCancel = new Promise<void>((resolve, reject) => {
+        const pCancel = new Promise<void>((_, reject) => {
             this.openingCancel = () => {
                 doSafeWork(() => {
                     logSession(this, 'OPENING CANCELLED');
@@ -300,26 +286,14 @@ export class ServSession {
                 });
             };
         });
-
-        // 合并所有Promise
         const promises = [p, pCancel];
-        if (pTimeout) {
-            promises.push(pTimeout);
-        }
+        if (pTimeout) {promises.push(pTimeout);}
         this.openingPromise = Promise.race(promises);
-
-        // 启动会话检查
         const sessionChecker = pTimeout ? this.sessionChecker : undefined;
-        if (sessionChecker) {
-            sessionChecker.start(this.sessionCheckOptions);
-        }
-
-        // 返回Promise并处理后续操作
+        if (sessionChecker) {sessionChecker.start(this.sessionCheckOptions);}
         return this.openingPromise.then(() => {
             this.flushPendingQueue();
-            if (sessionChecker) {
-                sessionChecker.startChecking();
-            }
+            if (sessionChecker) {sessionChecker.startChecking();}
         });
     }
 
@@ -355,34 +329,35 @@ export class ServSession {
      * @returns Promise<void>
      */
     sendMessage(msg: ServMessage): Promise<void> {
-        // 如果会话未打开，则加入待处理队列
         if (this.status !== EServSessionStatus.OPENED) {
             if (this.status === EServSessionStatus.OPENING) {
-                const pending = {
+                const pending: PendingMessage = {
                     isSend: true,
                     message: msg,
                     sendDeferred: DeferredUtil.create(),
                 };
                 this.pendingQueue.push(pending);
-
-                return pending.sendDeferred;
+                if (pending.sendDeferred) {
+                    return pending.sendDeferred;
+                }
             }
-
             logSession(this, 'Send(NOOPEN)', msg);
             return Promise.reject(new Error('Session not opened'));
         }
+        try {
+            if (msg.$type !== EServMessage.SESSION_HEARTBREAK) {
+                logSession(this, 'Send', msg);
+            }
+            const ret = this.channel.send(msg);
 
-        if (msg.$type !== EServMessage.SESSION_HEARTBREAK) {
-            logSession(this, 'Send', msg);
+            if (!ret) {
+                return Promise.reject(new Error('Send failed'));
+            }
+            return Promise.resolve();
+        } catch (e) {
+            logSession(this, 'Send(ERROR)', e);
+            return Promise.reject(e instanceof Error ? e : new Error(String(e)));
         }
-        
-        const ret = this.channel.send(msg);
-
-        if (!ret) {
-            return Promise.reject(new Error('Send failed'));
-        }
-
-        return Promise.resolve();
     }
 
     /**
@@ -394,7 +369,7 @@ export class ServSession {
      */
     callMessage<T = any>(type: string, args?: any, options?: ServSessionCallOptions): Promise<T> {
         const message = ServSessionCallMessageCreator.create(type, args);
-        let timeout: number = undefined!;
+        let timeout: number = 0;
         if (options && options.timeout !== undefined) {
             timeout = options.timeout;
         } else {
@@ -437,23 +412,24 @@ export class ServSession {
     recvPackage(pkg: ServSessionPackage): void {
         if (this.status !== EServSessionStatus.OPENED) {
             if (this.status === EServSessionStatus.OPENING) {
-                const pending = {
+                const pending: PendingMessage = {
                     message: pkg,
                 };
                 this.pendingQueue.push(pending);
                 return;
             }
-
             logSession(this, 'Recv(NOOPEN)', pkg);
             return;
         }
-
-        if (!pkg || typeof pkg !== 'object') {
+        if (typeof pkg !== 'object') {
             logSession(this, 'Recv(INVALID)', pkg);
             return;
         }
-
-        this.dispatchMessage(pkg);
+        try {
+            this.dispatchMessage(pkg);
+        } catch (e) {
+            logSession(this, 'Recv(ERROR)', e);
+        }
     }
 
     /**
@@ -479,7 +455,7 @@ export class ServSession {
         if (ServSessionCallMessageCreator.isCallMessage(msg)) {
             const callMsg = msg as ServSessionCallMessage;
             const doReturn = (data: any, error: any) => {
-                this.sendMessage(ServSessionCallMessageCreator.createReturn(callMsg, data, error));
+                void this.sendMessage(ServSessionCallMessageCreator.createReturn(callMsg, data, error));
             };
             if (this.onRecvCallListeners.length !== 0) {
                 const callListeners = this.onRecvCallListeners;
@@ -558,17 +534,17 @@ export class ServSession {
         this.pendingQueue = [];
         if (this.status === EServSessionStatus.CLOSED) {
             pendingQueue.forEach((item) => {
-                if (item.isSend) {
-                    item.sendDeferred!.reject(new Error('Session not opened'));
+                if (item.isSend && item.sendDeferred) {
+                    item.sendDeferred.reject(new Error('Session not opened'));
                 }
             });
         } else if (this.status === EServSessionStatus.OPENED) {
             pendingQueue.forEach((item) => {
-                if (item.isSend) {
+                if (item.isSend && item.sendDeferred) {
                     this.sendMessage(item.message).then((data) => {
-                        item.sendDeferred!.resolve(data);
-                    }, (error) => {
-                        item.sendDeferred!.reject(error);
+                        item.sendDeferred?.resolve(data);
+                    }, (error: unknown) => {
+                        item.sendDeferred?.reject(error instanceof Error ? error : new Error(String(error)));
                     });
                 } else {
                     this.recvPackage(item.message);
