@@ -7,5 +7,3 @@ export * from './session';
 export * from './window';
 export * from './sapp';
 export * from './load';
-const a = 1;
-// 测试
