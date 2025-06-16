@@ -15,7 +15,9 @@ import { ServMessageChannel, ServMessageChannelConfig } from './channel/ServMess
 import { ServWindowChannel, ServWindowChannelConfig } from './channel/ServWindowChannel';
 import { ServSessionChecker, ServSessionCheckerStartOptions } from './ServSessionChecker';
 import { ServEventLoaderChannel } from './channel/ServEventLoaderChannel';
-import { Deferred, DeferredUtil } from '../common/Deferred';
+import { IServSessionState } from './state/IServSessionState';
+import { ClosedState } from './state/ClosedState';
+import { OpenedState } from './state/OpenedState';
 
 /**
  * 会话状态枚举
@@ -67,14 +69,6 @@ export interface ServSessionOpenOptions {
 export type ServSessionPackage = ServMessage;
 
 /**
- * 会话监听器接口
- * 用于接收会话数据的回调接口
- */
-export interface ServSessionListener {
-    onRecvData(data: any): boolean;  // 接收数据的回调方法
-}
-
-/**
  * 会话消息接收监听器类型
  * 用于处理接收到的消息的回调函数
  */
@@ -97,31 +91,18 @@ export type ServSessionOnRecvCallMessageListener = (
 ) => boolean;
 
 /**
- * 待处理消息接口
- * 用于存储待处理的消息信息
- */
-interface PendingMessage {
-    isSend?: boolean;  // 是否是发送消息
-    sendDeferred?: Deferred;  // 发送延迟对象，用于异步处理
-    message: ServMessage;  // 消息内容
-}
-
-/**
  * 会话管理类
  * 负责管理RPC通信会话的核心类
  */
 export class ServSession {
     protected terminal: ServTerminal;  // 终端实例
-    protected status: EServSessionStatus;  // 当前会话状态
-    protected openingPromise?: Promise<void>;  // 打开会话的Promise
-    protected openingCancel?: (() => void);  // 取消打开会话的函数
+    protected state: IServSessionState;
     protected channel: ServChannel;  // 通信通道实例
     protected onRecvListeners: ServSessionOnRecvMessageListener[];  // 消息接收监听器列表
     protected onRecvCallListeners: ServSessionOnRecvCallMessageListener[];  // 调用消息接收监听器列表
     protected messageContextManager: ServMessageContextManager;  // 消息上下文管理器
     protected sessionChecker?: ServSessionChecker;  // 会话检查器
     protected sessionCheckOptions?: ServSessionCheckerStartOptions;  // 会话检查配置
-    protected pendingQueue: PendingMessage[];  // 待处理消息队列
 
     /**
      * 构造函数
@@ -129,7 +110,7 @@ export class ServSession {
      */
     constructor(terminal: ServTerminal) {
         this.terminal = terminal;
-        this.pendingQueue = [];
+        this.state = new ClosedState();
     }
 
     /**
@@ -137,7 +118,6 @@ export class ServSession {
      * @param config 会话配置
      */
     init(config: ServSessionConfig) {
-        this.status = EServSessionStatus.CLOSED;
         this.onRecvListeners = [];
         this.onRecvCallListeners = [];
         this.initChannel(config.channel);
@@ -221,7 +201,7 @@ export class ServSession {
      * @returns 是否已打开
      */
     isOpened() {
-        return this.status === EServSessionStatus.OPENED;
+        return this.state instanceof OpenedState;
     }
 
     /**
@@ -230,97 +210,14 @@ export class ServSession {
      * @returns Promise<void>
      */
     open(options?: ServSessionOpenOptions): Promise<void> {
-        if (this.status > EServSessionStatus.CLOSED) {
-            logSession(this, 'OPEN WHILE ' + (this.status === EServSessionStatus.OPENING ? 'OPENING' : 'OPENED'));
-            return this.openingPromise || Promise.reject(new Error('unknown'));
-        }
-        this.status = EServSessionStatus.OPENING;
-        logSession(this, 'OPENING');
-        let done = false;
-        let timer = 0;
-        const doSafeWork = (work: () => void) => {
-            if (done) {return;}
-            done = true;
-            this.openingCancel = undefined;
-            if (timer) {
-                clearTimeout(timer);
-                timer = 0;
-            }
-            work();
-        };
-        const timeout = (options && options.timeout) || EServConstant.SERV_SESSION_OPEN_TIMEOUT;
-        const pTimeout = timeout > 0 ? new Promise<void>((_, reject) => {
-            timer = setTimeout(() => {
-                doSafeWork(() => {
-                    logSession(this, 'OPENING TIMEOUT');
-                    reject(new Error('timeout'));
-                    this.close();
-                });
-            }, timeout) as unknown as number;
-        }) : undefined;
-        let openPromise = this.channel.open({
-            dontWaitSlaveEcho: !pTimeout,
-        });
-        if (options && options.waiting) {
-            const waiting = options.waiting.catch(() => undefined);
-            openPromise = Promise.all([openPromise, waiting]) as any as Promise<void>;
-        }
-        const p = openPromise.then(() => {
-            doSafeWork(() => {
-                logSession(this, 'OPENNED');
-                this.status = EServSessionStatus.OPENED;
-            });
-        }, (e: unknown) => {
-            doSafeWork(() => {
-                logSession(this, 'OPENING FAILED', e);
-                this.status = EServSessionStatus.CLOSED;
-            });
-            return Promise.reject(e instanceof Error ? e : new Error(String(e)));
-        });
-        const pCancel = new Promise<void>((_, reject) => {
-            this.openingCancel = () => {
-                doSafeWork(() => {
-                    logSession(this, 'OPENING CANCELLED');
-                    reject(new Error('cancel'));
-                    this.close();
-                });
-            };
-        });
-        const promises = [p, pCancel];
-        if (pTimeout) {promises.push(pTimeout);}
-        this.openingPromise = Promise.race(promises);
-        const sessionChecker = pTimeout ? this.sessionChecker : undefined;
-        if (sessionChecker) {sessionChecker.start(this.sessionCheckOptions);}
-        return this.openingPromise.then(() => {
-            this.flushPendingQueue();
-            if (sessionChecker) {sessionChecker.startChecking();}
-        });
+        return this.state.open(this, options);
     }
 
     /**
      * 关闭会话
      */
     close() {
-        if (this.status <= EServSessionStatus.CLOSED) {
-            logSession(this, 'CLOSE WHILE CLOSED');
-            return;
-        }
-
-        this.channel.close();
-        logSession(this, 'CLOSED');
-                    
-        this.status = EServSessionStatus.CLOSED;
-        
-        this.flushPendingQueue();
-        this.openingPromise = undefined;
-
-        if (this.openingCancel) {
-            this.openingCancel();
-        }
-
-        if (this.sessionChecker) {
-            this.sessionChecker.stop();
-        }
+        this.state.close(this);
     }
 
     /**
@@ -329,35 +226,7 @@ export class ServSession {
      * @returns Promise<void>
      */
     sendMessage(msg: ServMessage): Promise<void> {
-        if (this.status !== EServSessionStatus.OPENED) {
-            if (this.status === EServSessionStatus.OPENING) {
-                const pending: PendingMessage = {
-                    isSend: true,
-                    message: msg,
-                    sendDeferred: DeferredUtil.create(),
-                };
-                this.pendingQueue.push(pending);
-                if (pending.sendDeferred) {
-                    return pending.sendDeferred;
-                }
-            }
-            logSession(this, 'Send(NOOPEN)', msg);
-            return Promise.reject(new Error('Session not opened'));
-        }
-        try {
-            if (msg.$type !== EServMessage.SESSION_HEARTBREAK) {
-                logSession(this, 'Send', msg);
-            }
-            const ret = this.channel.send(msg);
-
-            if (!ret) {
-                return Promise.reject(new Error('Send failed'));
-            }
-            return Promise.resolve();
-        } catch (e) {
-            logSession(this, 'Send(ERROR)', e);
-            return Promise.reject(e instanceof Error ? e : new Error(String(e)));
-        }
+        return this.state.sendMessage(this, msg);
     }
 
     /**
@@ -410,33 +279,14 @@ export class ServSession {
      * @param pkg 消息包
      */
     recvPackage(pkg: ServSessionPackage): void {
-        if (this.status !== EServSessionStatus.OPENED) {
-            if (this.status === EServSessionStatus.OPENING) {
-                const pending: PendingMessage = {
-                    message: pkg,
-                };
-                this.pendingQueue.push(pending);
-                return;
-            }
-            logSession(this, 'Recv(NOOPEN)', pkg);
-            return;
-        }
-        if (typeof pkg !== 'object') {
-            logSession(this, 'Recv(INVALID)', pkg);
-            return;
-        }
-        try {
-            this.dispatchMessage(pkg);
-        } catch (e) {
-            logSession(this, 'Recv(ERROR)', e);
-        }
+        this.state.recvPackage(this, pkg);
     }
 
     /**
      * 分发消息
      * @param msg 消息
      */
-    protected dispatchMessage(msg: ServMessage): void {
+    dispatchMessage(msg: ServMessage): void {
         // 处理心跳消息
         if (this.sessionChecker && msg.$type === EServMessage.SESSION_HEARTBREAK) {
             this.sessionChecker.handleEchoMessage(msg);
@@ -525,31 +375,23 @@ export class ServSession {
         return ret;
     }
 
-    /**
-     * 处理待处理消息队列
-     * 在会话状态改变时处理队列中的消息
-     */
-    protected flushPendingQueue() {
-        const pendingQueue = this.pendingQueue;
-        this.pendingQueue = [];
-        if (this.status === EServSessionStatus.CLOSED) {
-            pendingQueue.forEach((item) => {
-                if (item.isSend && item.sendDeferred) {
-                    item.sendDeferred.reject(new Error('Session not opened'));
-                }
-            });
-        } else if (this.status === EServSessionStatus.OPENED) {
-            pendingQueue.forEach((item) => {
-                if (item.isSend && item.sendDeferred) {
-                    this.sendMessage(item.message).then((data) => {
-                        item.sendDeferred?.resolve(data);
-                    }, (error: unknown) => {
-                        item.sendDeferred?.reject(error instanceof Error ? error : new Error(String(error)));
-                    });
-                } else {
-                    this.recvPackage(item.message);
-                }
-            });
-        }
+    setState(state: IServSessionState) {
+        this.state = state;
+    }
+
+    getState() {
+        return this.state;
+    }
+
+    getChannel() {
+        return this.channel;
+    }
+
+    getSessionChecker() {
+        return this.sessionChecker;
+    }
+
+    getSessionCheckOptions() {
+        return this.sessionCheckOptions;
     }
 }
