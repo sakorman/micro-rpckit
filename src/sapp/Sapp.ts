@@ -68,7 +68,7 @@ export enum ESappType {
  */
 export class SappInfo {
     /**
-     * 应用唯一ID，建议使用类Java的域ID命名方式，比如“com.rpckit.example”
+     * 应用唯一ID，建议使用类Java的域ID命名方式，比如"com.rpckit.example"
      *
      * @type {string}
      * @memberof SappInfo
@@ -224,6 +224,7 @@ export interface SappConfig {
      * @returns {(Promise<any> | any)}
      * @memberof SappConfig
      */
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     resolveStartData?(app: Sapp): Promise<any> | any;
 
     /**
@@ -233,6 +234,7 @@ export interface SappConfig {
      * @returns {(Promise<any> | any)}
      * @memberof SappConfig
      */
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     resolveStartShowData?(app: Sapp): Promise<any> | any;
 
     /**
@@ -321,6 +323,7 @@ export interface SappStartOptions {
      * @type {(any | SappConfig['resolveStartData'])}
      * @memberof SappStartOptions
      */
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     data?: any | SappConfig['resolveStartData'];
     /**
      * 参加SappConfig.resolveStartShowData
@@ -328,6 +331,7 @@ export interface SappStartOptions {
      * @type {(any | SappConfig['resolveStartShowData'])}
      * @memberof SappStartOptions
      */
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     showData?: any | SappConfig['resolveStartShowData'];
 }
 
@@ -543,7 +547,7 @@ export class Sapp {
         }
 
         if (this.closed.isFinished()) {
-            throw new Error(`[SAPP] App has closed`);
+            throw new Error('[SAPP] App has closed');
         }
 
         try {
@@ -628,7 +632,7 @@ export class Sapp {
                 });
         } catch (e) {
             this.started.reject(e);
-            this.close();
+            void this.close();
 
             throw e;
         }
@@ -676,21 +680,21 @@ export class Sapp {
                             byCreate,
                         }).then((result) => {
                             if (result && result.dontShow) {
-                                asyncThrow(new Error(`[SAPP] Can\'t show app because rejection`));
+                                asyncThrow(new Error('[SAPP] Can\'t show app because rejection'));
                             }
                             return {
                                 dontShow: !!(result && result.dontShow),
                             };
                         }, (error) => {
                             asyncThrow(error);
-                            asyncThrow(new Error(`[SAPP] Can\'t show app because error`));
+                            asyncThrow(new Error('[SAPP] Can\'t show app because error'));
                             return {
                                 error,
                             };
                         });
                     }, (error) => {
                         asyncThrow(error);
-                        asyncThrow(new Error(`[SAPP] Can\'t show app because lifecycle service not provided`));
+                        asyncThrow(new Error('[SAPP] Can\'t show app because lifecycle service not provided'));
                         return {
                             error,
                         };
@@ -729,21 +733,21 @@ export class Sapp {
                             ...params,
                         }).then((result) => {
                             if (result && result.dontHide) {
-                                asyncThrow(new Error(`[SAPP] Can\'t hide app because rejection`));
+                                asyncThrow(new Error('[SAPP] Can\'t hide app because rejection'));
                             }
                             return {
                                 dontHide: !!(result && result.dontHide),
                             };
                         }, (error) => {
                             asyncThrow(error);
-                            asyncThrow(new Error(`[SAPP] Can\'t hide app because error`));
+                            asyncThrow(new Error('[SAPP] Can\'t hide app because error'));
                             return {
                                 error,
                             };
                         });
                     }, (error) => {
                         asyncThrow(error);
-                        asyncThrow(new Error(`[SAPP] Can\'t hide app because lifecycle service not provided`));
+                        asyncThrow(new Error('[SAPP] Can\'t hide app because lifecycle service not provided'));
                         return {
                             error,
                         };
@@ -861,12 +865,13 @@ export class Sapp {
      * }
      * ```
      */
-    getService: ServServiceClient['getService'] = function(this: Sapp) {
+    getService: ServServiceClient['getService'] = function(this: Sapp, ...args: any[]): any {
         if (!this.isStarted) {
             return;
         }
 
-        return this.terminal.client.getService(arguments[0]) as any;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return (this.terminal.client.getService as any)(...args);
     };
 
     /**
@@ -881,8 +886,9 @@ export class Sapp {
      * serv.func(); // 没有 undefined 错误提示
      * ```
      */
-    getServiceUnsafe: ServServiceClient['getServiceUnsafe'] = function(this: Sapp) {
-        return this.getService.apply(this, arguments);
+    getServiceUnsafe: ServServiceClient['getServiceUnsafe'] = function(this: Sapp, ...args: any[]): any {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return (this.getService as any)(...args);
     };
 
     /**
@@ -896,12 +902,13 @@ export class Sapp {
      * const serv = await app.service(CommServiceDecl);
      * ```
      */
-    service: ServServiceClient['service'] = function(this: Sapp) {
+    service: ServServiceClient['service'] = function(this: Sapp, ...args: any[]): any {
         if (!this.isStarted) {
             return Promise.reject(new Error('[SAPP] Sapp is not started'));
         }
 
-        return this.terminal.client.service.apply(this.terminal.client, arguments);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return (this.terminal.client.service as any)(...args);
     };
 
     /**
@@ -917,12 +924,13 @@ export class Sapp {
      * });
      * ```
      */
-    serviceExec: ServServiceClient['serviceExec'] = function(this: Sapp) {
+    serviceExec: ServServiceClient['serviceExec'] = function(this: Sapp, ...args: any[]): any {
         if (!this.isStarted) {
             return null;
         }
 
-        return this.terminal.client.serviceExec.apply(this.terminal.client, arguments);
+         
+        return (this.terminal.client.serviceExec as any)(...args);
     };
 
     /**
@@ -931,12 +939,13 @@ export class Sapp {
      * @type {ServServiceServer['getService']}
      * @memberof Sapp
      */
-    getServerService: ServServiceServer['getService'] = function(this: Sapp) {
+    getServerService: ServServiceServer['getService'] = function(this: Sapp, ...args: any[]): any {
         if (!this.isStarted) {
             return;
         }
 
-        return this.terminal.server.getService(arguments[0]);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return (this.terminal.server.getService as any)(...args);
     };
 
     /**
@@ -945,8 +954,8 @@ export class Sapp {
      * @type {ServServiceServer['getServiceUnsafe']}
      * @memberof Sapp
      */
-    getServerServiceUnsafe: ServServiceServer['getServiceUnsafe'] = function(this: Sapp) {
-        return this.getServerService.apply(this, arguments);
+    getServerServiceUnsafe: ServServiceServer['getServiceUnsafe'] = function(this: Sapp, ...args: any[]): any {
+        return (this.getServerService as any)(...args);
     };
 
     /**
@@ -955,12 +964,12 @@ export class Sapp {
      * @type {ServServiceServer['service']}
      * @memberof Sapp
      */
-    serverService: ServServiceServer['service'] = function(this: Sapp) {
+    serverService: ServServiceServer['service'] = function(this: Sapp, ...args: any[]): any {
         if (!this.isStarted) {
             return Promise.reject(new Error('[SAPP] Sapp is not started'));
         }
 
-        return this.terminal.server.service.apply(this.terminal.server, arguments);
+        return (this.terminal.server.service as any)(...args);
     };
 
     /**
@@ -969,12 +978,13 @@ export class Sapp {
      * @type {ServServiceServer['serviceExec']}
      * @memberof Sapp
      */
-    serverServiceExec: ServServiceServer['serviceExec'] = function(this: Sapp) {
+    serverServiceExec: ServServiceServer['serviceExec'] = function(this: Sapp, ...args: any[]): any {
         if (!this.isStarted) {
             return null;
         }
 
-        return this.terminal.server.serviceExec.apply(this.terminal.server, arguments);
+         
+        return (this.terminal.server.serviceExec as any)(...args);
     };
 
     protected async auth(params: SappAuthParams): Promise<void> {
@@ -989,7 +999,7 @@ export class Sapp {
         return this.controller.doAuth(params);
     }
 
-    protected async beforeStart(options: SappStartOptions): Promise<void> {
+    protected async beforeStart(_options: SappStartOptions): Promise<void> {
         if (this.config.beforeStart) {
             await this.config.beforeStart(this);
         }
@@ -1008,8 +1018,8 @@ export class Sapp {
         this.terminal = undefined!;
     }
 
-    protected async resolveStartData(options: SappStartOptions): Promise<any> {
-        let resolveData: SappConfig['resolveStartData'] = undefined!;
+    protected resolveStartData(options: SappStartOptions): any {
+        let resolveData: SappConfig['resolveStartData'] = undefined;
         if (options.data) {
             resolveData =
                 typeof options.data === 'function'
@@ -1024,8 +1034,8 @@ export class Sapp {
         }
     }
 
-    protected async resolveStartShowData(options: SappStartOptions): Promise<any> {
-        let resolveData: SappConfig['resolveStartShowData'] = undefined!;
+    protected resolveStartShowData(options: SappStartOptions): any {
+        let resolveData: SappConfig['resolveStartShowData'] = undefined;
         if (options.showData) {
             resolveData =
                 typeof options.showData === 'function'
@@ -1097,9 +1107,10 @@ export class Sapp {
         });
 
         // Setup lifecycle
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self = this;
         const SappLifecycleImpl = class extends SappLifecycle {
-            onStart(): ServAPIRetn {
+            onStart = (): ServAPIRetn => {
                 if (self.isClosed) {
                     return API_ERROR('closed');
                 }
@@ -1108,7 +1119,7 @@ export class Sapp {
                 }
 
                 if (self.isStarted) {   // For has started app, do show work
-                    Promise.resolve().then(async () => {
+                    void Promise.resolve().then(async () => {
                         if (!self.isStarted) {
                             return;
                         }
@@ -1122,13 +1133,13 @@ export class Sapp {
                             showParams.data = data;
                         }
 
-                        self._show(showParams, true);
+                        void self._show(showParams, true);
                     });
                 }
                 return API_SUCCEED();
-            }
+            };
 
-            auth(params: SappAuthParams): ServAPIRetn {
+            auth = (params: SappAuthParams): ServAPIRetn => {
                 if (self.isClosed) {
                     return API_ERROR('closed');
                 }
@@ -1145,26 +1156,26 @@ export class Sapp {
                 });
 
                 return p;
-            }
+            };
 
-            getStartData(): ServAPIRetn<any> {
+            getStartData = (): ServAPIRetn<any> => {
                 if (self.isClosed) {
                     return API_ERROR('closed');
                 }
                 return self.resolveStartData(options);
-            }
+            };
 
-            show(p?: ServAPIArgs<SappShowParams>): ServAPIRetn<boolean> {
+            show = (p?: ServAPIArgs<SappShowParams>): ServAPIRetn<boolean> => {
                 return self.show(p);
-            }
+            };
 
-            hide(p?: ServAPIArgs<SappHideParams>): ServAPIRetn<boolean> {
+            hide = (p?: ServAPIArgs<SappHideParams>): ServAPIRetn<boolean> => {
                 return self.hide(p);
-            }
+            };
 
-            close(result?: ServAPIArgs<SappCloseResult>): ServAPIRetn<boolean> {
+            close = (result?: ServAPIArgs<SappCloseResult>): ServAPIRetn<boolean> => {
                 return self.close(result);
-            }
+            };
         };
         anno.impl()(SappLifecycleImpl);
 

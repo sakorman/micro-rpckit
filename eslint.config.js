@@ -38,6 +38,9 @@ export default tseslint.config(
             // 这里是你自定义的规则
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
             '@typescript-eslint/no-explicit-any': 'warn',
+            '@typescript-eslint/no-unsafe-call': 'warn',
+            '@typescript-eslint/no-unsafe-return': 'warn',
+            '@typescript-eslint/no-unsafe-argument': 'warn',
             '@typescript-eslint/explicit-module-boundary-types': 'off',
             
             // 代码风格规则
