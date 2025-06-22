@@ -6,8 +6,9 @@ import { ServTerminal } from '../terminal/ServTerminal';
 import { ServEventerManager } from './event/ServEventerManager';
 import { ServAPI, ServAPIMeta, ServServiceMeta, ServEventerMeta, ServService, ServAPICallOptions } from './ServService';
 
-// tslint:disable-next-line:no-empty-interface
-export interface ServServiceClientConfig {}
+export interface ServServiceClientConfig {
+    [key: string]: any;
+}
 
 export type IServClientService<T extends typeof ServService = any> = Omit<InstanceType<T>, keyof ServService>;
 
@@ -69,20 +70,18 @@ export class ServServiceClient {
         return service as InstanceType<T>;
     }
 
-    getService<T extends typeof ServService>(decl: T): IServClientService<T> | undefined;
     getService<M extends { [key: string]: typeof ServService }>(decls: M)
         : { [key in keyof M]: IServClientService<M[key]> | undefined };
-    getService() {
-        if (arguments.length === 0) {
+    getService(decls?: any) {
+        if (!decls) {
             return;
         }
 
-        const decls = arguments[0];
         if (typeof decls === 'function') {
             return this._getService(decls);
         } else {
             const keys = Object.keys(decls);
-            const services = {};
+            const services: { [key: string]: any } = {};
             for (let i = 0, iz = keys.length; i < iz; ++i) {
                 services[keys[i]] = this._getService(decls[keys[i]]);
             }
@@ -94,77 +93,54 @@ export class ServServiceClient {
     getServiceUnsafe<T extends typeof ServService>(decl: T): IServClientService<T>;
     getServiceUnsafe<M extends { [key: string]: typeof ServService }>(decls: M)
         : { [key in keyof M]: IServClientService<M[key]> };
-    getServiceUnsafe() {
-        return this.getService.apply(this, arguments);
+    getServiceUnsafe(decls?: any) {
+        const services = this.getService(decls);
+        if (!services) {
+            return asyncThrowMessage('Get service failed');
+        }
+        return services;
     }
 
     service<T extends typeof ServService>(decl: T): Promise<IServClientService<T>>;
     service<M extends { [key: string]: typeof ServService }>(decls: M)
         : Promise<{ [key in keyof M]: IServClientService<M[key]> }>;
-    service() {
-        if (arguments.length === 0) {
-            return Promise.reject(new Error('[RPCKIT] Decl is empty'));
-        }
-
-        const services = this.serviceExec(arguments[0], (v) => {
-            return v;
-        });
-
-        return services ? Promise.resolve(services) : Promise.reject(new Error('[SAPPSDK] Get a undefined service'));
+    service(decls?: any) {
+        return Promise.resolve(this.getServiceUnsafe(decls));
     }
 
     serviceExec<
         T extends typeof ServService,
         R>(
-        decl: T,
-        exec: ((service: IServClientService<T>) => R));
+            decl: T,
+            exec: ((service: IServClientService<T>) => R)
+        );
     serviceExec<
         M extends { [key: string]: typeof ServService },
         R>(
-        decls: M,
-        exec: ((services: { [key in keyof M]: IServClientService<M[key]> }) => R));
-    serviceExec() {
-        if (arguments.length < 2) {
+            decls: M,
+            exec: ((services: { [key in keyof M]: IServClientService<M[key]> }) => R)
+        );
+    serviceExec(decls: any, exec: any) {
+        const services = this.getService(decls);
+        if (!services) {
             return null;
         }
 
-        const decls = arguments[0];
-        const exec = arguments[1];
-
-        if (typeof decls === 'function') {
-            const service = this._getService(decls);
-            if (!service) {
-                return null;
-            }
-    
-            return exec(service);
-        } else {
-            const keys = Object.keys(decls);
-            const services = {};
-            for (let i = 0, iz = keys.length; i < iz; ++i) {
-                const service = this._getService(decls[keys[i]]);
-                if (!service) {
-                    return null;
-                }
-                services[keys[i]] = service;
-            }
-            
-            return exec.call(window, services);
-        }
+        return exec(services);
     }
 
     protected checkServiceVersion(service: ServServiceMeta) {
         this.sendCommonMessageForReturn(
             ServServiceMessageCreator.create(EServServiceMessage.GET_VERSION, service.id),
             -1)
-        .then((curVersion) => {
-            const version = service.version;
-            if (curVersion !== version) {
-                asyncThrowMessage(`${service.id} curren version is ${curVersion}, but ${version} is used in your projet now, Please update your service npm package.`);
-            }
-        }, (error) => {
-            asyncThrow(error);
-        });
+            .then((curVersion) => {
+                const version = service.version;
+                if (curVersion !== version) {
+                    asyncThrowMessage(`${service.id} curren version is ${curVersion}, but ${version} is used in your projet now, Please update your service npm package.`);
+                }
+            }, (error) => {
+                asyncThrow(error);
+            });
     }
 
     private generateService<T extends typeof ServService>(decl: T): InstanceType<T> | undefined {
@@ -267,7 +243,7 @@ export class ServServiceClient {
         }
 
         return false;
-    }
+    };
 
     protected handleAPIReturnMessage(message: ServServiceReturnMessage, origin: ServServiceMessage): boolean {
         if (message.error) {

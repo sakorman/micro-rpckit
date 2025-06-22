@@ -60,7 +60,7 @@ class DeferredImpl<T> {
 
         this._finishedResult = EDeferredResult.RESOLVED;
         return this._resolve(data);
-    }
+    };
 
     reject = (error?: any) => {
         this.clearTimeout();
@@ -71,7 +71,7 @@ class DeferredImpl<T> {
 
         this._finishedResult = EDeferredResult.REJECTED;
         return this._reject(error);
-    }
+    };
 
     timeout = () => {
         this._timeoutTimer = 0;
@@ -82,11 +82,11 @@ class DeferredImpl<T> {
 
         this._finishedResult = EDeferredResult.TIMEOUT;
         this._reject(new Error('timeout'));
-    }
+    };
 
     isFinished = () => {
         return this._finishedResult;
-    }
+    };
 
     protected startTimeout(timeout: number) {
         this.clearTimeout();
@@ -132,13 +132,13 @@ export class DeferredUtil {
         return ret;
     }
 
-    static reEntryGuard<T extends Function>(func: T, options?: DeferredOptions) {
-        const newFunc = function() {
+    static reEntryGuard<T extends (...args: any[]) => any>(func: T, options?: DeferredOptions) {
+        const newFunc = function(...args: Parameters<T>) {
             if (newFunc.deferred) {
                 return newFunc.deferred;
             }
     
-            const deferred = DeferredUtil.create<T>(options);
+            const deferred = DeferredUtil.create<ReturnType<T>>(options);
             newFunc.deferred = deferred;
             deferred.then(() => {
                 newFunc.deferred = undefined;
@@ -147,7 +147,7 @@ export class DeferredUtil {
             });
 
             try {
-                Promise.resolve(func.apply(this, arguments)).then((val) => {
+                Promise.resolve(func.apply(this, args)).then((val) => {
                     deferred.resolve(val);
                 }, (err) => {
                     deferred.reject(err);
@@ -159,7 +159,7 @@ export class DeferredUtil {
             return deferred;
         } as any;
     
-        return newFunc as T & { deferred: Deferred | undefined };
+        return newFunc as ((...args: Parameters<T>) => Deferred<ReturnType<T>>) & { deferred: Deferred<ReturnType<T>> | undefined };
     }
 
 }

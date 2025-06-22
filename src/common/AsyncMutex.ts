@@ -38,24 +38,18 @@ export class AsyncMutex {
         return lock.deferred;
     }
 
-    lockGuard<T extends Function>(func: T): T {
+    lockGuard<T extends (...args: any[]) => any>(func: T) {
         const self = this;
-        const newFunc = function() {
-            const args = Array.prototype.slice.apply(arguments);
-            return self.lock().then((unlock) => {
-                let ret: any;
-                try {
-                    ret = func.apply(this, args);
-                } catch (e) {
-                    ret = Promise.reject(e);
-                }
+        const newFunc = async function(...args: Parameters<T>) {
+            const unlock = await self.lock();
+            try {
+                return await func.apply(this, args);
+            } finally {
                 unlock();
-
-                return ret;
-            });
+            }
         };
 
-        return newFunc as any;
+        return newFunc;
     }
 
     protected tryLock() {

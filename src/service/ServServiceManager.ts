@@ -40,11 +40,11 @@ export class ServServiceRefer {
         if (Array.isArray(this.pattern)) {
             const ptns = this.pattern;
             let type: string;
-            let ptn: ServServiceReferPattern;
+            let ptn: (typeof ptns)[0];
             for (let i = 0, iz = ptns.length; i < iz; ++i) {
                 ptn = ptns[i];
                 type = typeof ptn;
-                if (type === 'function' && (ptn as Function)(service)) {
+                if (type === 'function' && (ptn as (service: string) => boolean)(service)) {
                     return true;
                 } else if (type === 'string' && ptn === service) {
                     return true;
@@ -56,7 +56,7 @@ export class ServServiceRefer {
             const ptn = this.pattern;
             const type = typeof ptn;
 
-            if (type === 'function' && (ptn as Function)(service)) {
+            if (type === 'function' && (ptn as (service: string) => boolean)(service)) {
                 return true;
             } else if (type === 'string' && ptn === service) {
                 return true;
@@ -139,32 +139,13 @@ export class ServServiceManager {
     init(config?: ServServiceConfig) {
         this.services = {};
         this.serviceInfos = {};
-        const self = this;
         this.serviceInjects = {
-            // tslint:disable-next-line:object-literal-shorthand
-            getService: function() {
-                return self.getService.apply(self, arguments);
-            },
-            // tslint:disable-next-line:object-literal-shorthand
-            getServiceUnsafe: function() {
-                return self.getServiceUnsafe.apply(self, arguments);
-            },
-            // tslint:disable-next-line:object-literal-shorthand
-            service: function() {
-                return self.service.apply(self, arguments);
-            },
-            // tslint:disable-next-line:object-literal-shorthand
-            serviceExec: function() {
-                return self.serviceExec.apply(self, arguments);
-            },
-            // tslint:disable-next-line:object-literal-shorthand
-            getServiceByID: function() {
-                return self.getServiceByID.apply(self, arguments);
-            },
-            // tslint:disable-next-line:object-literal-shorthand
-            serviceExecByID: function() {
-                return self.serviceExecByID.apply(self, arguments);
-            },
+            getService: this.getService.bind(this),
+            getServiceUnsafe: this.getServiceUnsafe.bind(this),
+            service: this.service.bind(this),
+            serviceExec: this.serviceExec.bind(this),
+            getServiceByID: this.getServiceByID.bind(this),
+            serviceExecByID: this.serviceExecByID.bind(this),
         };
 
         this.eventerManager = new ServEventerManager();
@@ -226,17 +207,16 @@ export class ServServiceManager {
     getService<T extends typeof ServService>(decl: T): InstanceType<T> | undefined;
     getService<M extends { [key: string]: typeof ServService }>(decls: M)
         : { [key in keyof M]: InstanceType<M[key]> | undefined };
-    getService() {
-        if (arguments.length === 0) {
+    getService(decls?: any) {
+        if (!decls) {
             return;
         }
 
-        const decls = arguments[0];
         if (typeof decls === 'function') {
             return this._getService(decls);
         } else {
             const keys = Object.keys(decls);
-            const services = {};
+            const services: { [key: string]: any } = {};
             for (let i = 0, iz = keys.length; i < iz; ++i) {
                 services[keys[i]] = this._getService(decls[keys[i]]);
             }
@@ -248,63 +228,29 @@ export class ServServiceManager {
     getServiceUnsafe<T extends typeof ServService>(decl: T): InstanceType<T>;
     getServiceUnsafe<M extends { [key: string]: typeof ServService }>(decls: M)
         : { [key in keyof M]: InstanceType<M[key]> };
-    getServiceUnsafe() {
-        return this.getService.apply(this, arguments);
+    getServiceUnsafe(decls?: any) {
+        const services = this.getService(decls);
+        if (!services) {
+            return asyncThrowMessage('Get service failed');
+        }
+        return services;
     }
 
     service<T extends typeof ServService>(decl: T): Promise<InstanceType<T>>;
     service<M extends { [key: string]: typeof ServService }>(decls: M)
         : Promise<{ [key in keyof M]: InstanceType<M[key]> }>;
-    service() {
-        if (arguments.length === 0) {
-            return Promise.reject(new Error('[RPCKIT] Decl is empty'));
-        }
-
-        const services = this.serviceExec(arguments[0], (v) => {
-            return v;
-        });
-
-        return services ? Promise.resolve(services) : Promise.reject(new Error('[SAPPSDK] Get a undefined service'));
+    service(decls?: any) {
+        return Promise.resolve(this.getServiceUnsafe(decls));
     }
 
-    serviceExec<
-        T extends typeof ServService,
-        R>(
-        decl: T,
-        exec: ((service: InstanceType<T>) => R));
-    serviceExec<
-        M extends { [key: string]: typeof ServService },
-        R>(
-        decls: M,
-        exec: ((services: { [key in keyof M]: InstanceType<M[key]> }) => R));
-    serviceExec() {
-        if (arguments.length < 2) {
+    serviceExec<T extends ServService, R>(decl: typeof ServService, exec: ((service: T) => R)): R | null;
+    serviceExec<R>(decl: typeof ServService, exec: ((service: ServService) => R)): R | null;
+    serviceExec(decl: typeof ServService, exec: (service: ServService) => any) {
+        const service = this.getService(decl);
+        if (!service) {
             return null;
         }
-
-        const decls = arguments[0];
-        const exec = arguments[1];
-
-        if (typeof decls === 'function') {
-            const service = this._getService(decls);
-            if (!service) {
-                return null;
-            }
-    
-            return exec(service);
-        } else {
-            const keys = Object.keys(decls);
-            const services = {};
-            for (let i = 0, iz = keys.length; i < iz; ++i) {
-                const service = this._getService(decls[keys[i]]);
-                if (!service) {
-                    return null;
-                }
-                services[keys[i]] = service;
-            }
-            
-            return exec.call(window, services);
-        }
+        return exec(service);
     }
 
     serviceExecByID<T extends ServService, R>(id: string, exec: ((service: T) => R)): R | null {
@@ -445,7 +391,7 @@ export class ServServiceManager {
         }
 
         return Promise.resolve();
-    }
+    };
 
     onReferAttach(refer: ServServiceRefer) {
         const i = this.refers.indexOf(refer);

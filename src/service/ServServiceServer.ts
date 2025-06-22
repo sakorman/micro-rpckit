@@ -84,20 +84,18 @@ export class ServServiceServer {
         delete this.ACLResolver;
     }
 
-    getService<T extends typeof ServService>(decl: T): InstanceType<T> | undefined;
     getService<M extends { [key: string]: typeof ServService }>(decls: M)
         : { [key in keyof M]: InstanceType<M[key]> | undefined };
-    getService() {
-        if (arguments.length === 0) {
+    getService(decls?: any) {
+        if (!decls) {
             return;
         }
 
-        const decls = arguments[0];
         if (typeof decls === 'function') {
             return this._getService(decls);
         } else {
             const keys = Object.keys(decls);
-            const services = {};
+            const services: { [key: string]: any } = {};
             for (let i = 0, iz = keys.length; i < iz; ++i) {
                 services[keys[i]] = this._getService(decls[keys[i]]);
             }
@@ -109,23 +107,19 @@ export class ServServiceServer {
     getServiceUnsafe<T extends typeof ServService>(decl: T): InstanceType<T>;
     getServiceUnsafe<M extends { [key: string]: typeof ServService }>(decls: M)
         : { [key in keyof M]: InstanceType<M[key]> };
-    getServiceUnsafe() {
-        return this.getService.apply(this, arguments);
+    getServiceUnsafe(decls?: any) {
+        const services = this.getService(decls);
+        if (!services) {
+            return asyncThrow('Get service failed');
+        }
+        return services;
     }
 
     service<T extends typeof ServService>(decl: T): Promise<InstanceType<T>>;
     service<M extends { [key: string]: typeof ServService }>(decls: M)
         : Promise<{ [key in keyof M]: InstanceType<M[key]> }>;
-    service() {
-        if (arguments.length === 0) {
-            return Promise.reject(new Error('[RPCKIT] Decl is empty'));
-        }
-
-        const services = this.serviceExec(arguments[0], (v) => {
-            return v;
-        });
-
-        return services ? Promise.resolve(services) : Promise.reject(new Error('[SAPPSDK] Get a undefined service'));
+    service(decls?: any) {
+        return Promise.resolve(this.getServiceUnsafe(decls));
     }
 
     serviceExec<
@@ -138,34 +132,13 @@ export class ServServiceServer {
         R>(
         decls: M,
         exec: ((services: { [key in keyof M]: InstanceType<M[key]> }) => R));
-    serviceExec() {
-        if (arguments.length < 2) {
+    serviceExec(decls: any, exec: any) {
+        const services = this.getService(decls);
+        if (!services) {
             return null;
         }
 
-        const decls = arguments[0];
-        const exec = arguments[1];
-
-        if (typeof decls === 'function') {
-            const service = this._getService(decls);
-            if (!service) {
-                return null;
-            }
-    
-            return exec(service);
-        } else {
-            const keys = Object.keys(decls);
-            const services = {};
-            for (let i = 0, iz = keys.length; i < iz; ++i) {
-                const service = this._getService(decls[keys[i]]);
-                if (!service) {
-                    return null;
-                }
-                services[keys[i]] = service;
-            }
-            
-            return exec.call(window, services);
-        }
+        return exec(services);
     }
 
     serviceExecByID<T extends ServService, R>(id: string, exec: ((service: T) => R)): R | null {
@@ -222,7 +195,7 @@ export class ServServiceServer {
         }
 
         return false;
-    }
+    };
 
     protected handleAPIMessage(message: ServServiceAPIMessage): boolean {
         const id = message.service;
@@ -364,5 +337,5 @@ export class ServServiceServer {
 
         const message = ServServiceMessageCreator.createEvent(serviceId, event, args);
         return this.sendMessage(message).catch(() => undefined);
-    }
+    };
 }
