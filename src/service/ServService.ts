@@ -325,7 +325,7 @@ export class ServService {
      * @returns
      * @memberof ServService
      */
-     implMeta() {
+    implMeta() {
         return implMeta(this);
     }
 
