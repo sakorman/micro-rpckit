@@ -224,7 +224,7 @@ export interface SappConfig {
      * @returns {(Promise<any> | any)}
      * @memberof SappConfig
      */
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+     
     resolveStartData?(app: Sapp): Promise<any> | any;
 
     /**
@@ -234,7 +234,7 @@ export interface SappConfig {
      * @returns {(Promise<any> | any)}
      * @memberof SappConfig
      */
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+     
     resolveStartShowData?(app: Sapp): Promise<any> | any;
 
     /**
@@ -323,7 +323,7 @@ export interface SappStartOptions {
      * @type {(any | SappConfig['resolveStartData'])}
      * @memberof SappStartOptions
      */
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+     
     data?: any | SappConfig['resolveStartData'];
     /**
      * 参加SappConfig.resolveStartShowData
@@ -331,7 +331,7 @@ export interface SappStartOptions {
      * @type {(any | SappConfig['resolveStartShowData'])}
      * @memberof SappStartOptions
      */
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+     
     showData?: any | SappConfig['resolveStartShowData'];
 }
 
@@ -779,13 +779,7 @@ export class Sapp {
                 }
             }));
 
-    /**
-     * 隐藏应用；具有防重入处理；result将会传递给SappSDK onClose回调；
-     *
-     * @param {SappCloseResult} result
-     * @memberof Sapp
-     */
-    close = DeferredUtil.reEntryGuard(
+    protected _closeRunner = DeferredUtil.reEntryGuard(
         this.mutex.lockGuard(
             async (result?: SappCloseResult) => {
                 if (this.isStarted) {
@@ -842,6 +836,16 @@ export class Sapp {
 
                 return true;
             }));
+            
+    /**
+     * 隐藏应用；具有防重入处理；result将会传递给SappSDK onClose回调；
+     *
+     * @param {SappCloseResult} result
+     * @memberof Sapp
+     */
+    close = (result?: SappCloseResult): Promise<boolean> => {
+        return this._closeRunner(result).then((p) => p) as Promise<boolean>;
+    };
 
     /**
      * 获取从应用提供的Service，同步版本
@@ -870,7 +874,7 @@ export class Sapp {
             return;
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+         
         return (this.terminal.client.getService as any)(...args);
     };
 
@@ -887,7 +891,7 @@ export class Sapp {
      * ```
      */
     getServiceUnsafe: ServServiceClient['getServiceUnsafe'] = function(this: Sapp, ...args: any[]): any {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+         
         return (this.getService as any)(...args);
     };
 
@@ -907,7 +911,7 @@ export class Sapp {
             return Promise.reject(new Error('[SAPP] Sapp is not started'));
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+         
         return (this.terminal.client.service as any)(...args);
     };
 
@@ -944,7 +948,7 @@ export class Sapp {
             return;
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+         
         return (this.terminal.server.getService as any)(...args);
     };
 
@@ -1107,7 +1111,7 @@ export class Sapp {
         });
 
         // Setup lifecycle
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
+         
         const self = this;
         const SappLifecycleImpl = class extends SappLifecycle {
             onStart = (): ServAPIRetn => {
