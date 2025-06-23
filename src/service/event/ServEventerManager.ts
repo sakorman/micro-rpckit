@@ -45,16 +45,16 @@ class Eventer implements ServEventer {
     once(listener: ServEventListener): ServEventUnListener {
         const old = this.wrapTransformListener(listener);
         let unlistener: ServEventUnListener = undefined!;
-        listener = function() {
-            old.apply(this, arguments);
+        const onceListener = function(this: any, arg: any) {
+            old.call(this, arg);
             if (unlistener) {
                 unlistener();
             }
         };
 
-        unlistener = this.generateUnlitener(listener);
+        unlistener = this.generateUnlitener(onceListener);
         if (this.center) {
-            this.center.once(this.rawEvent, listener);
+            this.center.once(this.rawEvent, onceListener);
         }
 
         return unlistener;
@@ -153,7 +153,7 @@ export class ServEventerManager {
             if (this.center && this.oldEmit) {
                 return this.oldEmit.call(this.center, Eventer.generateRawEvent(service, event), args);
             }
-        } catch (e) {
+        } catch {
             //
         }
     }
