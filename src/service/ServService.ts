@@ -12,7 +12,7 @@ export type ServEXT = any;
  */
 export interface ServDeclOptions {
     /**
-     * Service id
+     * Service id, 服务的唯一标识，必需
      *
      * @type {string}
      * @memberof ServDeclOptions
@@ -20,7 +20,7 @@ export interface ServDeclOptions {
     id: string;
 
     /**
-     * Service version
+     * Service version, 服务版本号，必需
      *
      * @type {string}
      * @memberof ServDeclOptions
@@ -28,7 +28,7 @@ export interface ServDeclOptions {
     version: string;
 
     /**
-     * Service粒度的访问权限
+     * Service粒度的访问权限控制列表(Access Control List)
      *
      * @type {ServACL}
      * @memberof ServDeclOptions
@@ -36,7 +36,7 @@ export interface ServDeclOptions {
     ACL?: ServACL;
 
     /**
-     * Service的扩展数据
+     * Service的扩展数据，可用于附加自定义元数据
      *
      * @type {ServEXT}
      * @memberof ServDeclOptions
@@ -44,12 +44,18 @@ export interface ServDeclOptions {
     EXT?: ServEXT;
 
     /**
-     * 是否需要Service版本校对，默认为true
+     * 是否需要Service版本校对，默认为true。如果设为true，客户端和服务端版本不匹配时可能导致调用失败。
      *
      * @type {boolean}
      * @memberof ServDeclOptions
      */
     noVersionCheck?: boolean;
+    /**
+     * 是否禁用RPC调用事件，默认为false。
+     *
+     * @type {boolean}
+     * @memberof ServDeclOptions
+     */
     noRPCCallEvent?: boolean;
 }
 
@@ -61,7 +67,8 @@ export interface ServDeclOptions {
  */
 export interface ServImplOptions {
     /**
-     * 指定Service api中是否需要ServAPICallContext；默认为false
+     * 指定Service api中是否需要注入ServAPICallContext；默认为false。
+     * 如果为true，在服务端实现API方法时，最后一个参数会是ServAPICallContext，包含调用方信息。
      *
      * @type {boolean}
      * @memberof ServImplOptions
@@ -70,17 +77,20 @@ export interface ServImplOptions {
 }
 
 /**
- * API 调用时，数据传输过程当中的序列化与反序列化功能
+ * API 调用时，数据传输过程当中的序列化与反序列化处理器。
+ * 用于在数据离开或到达当前终端时进行转换。
  */
 export interface ServApiTransformOptions<T = any, R = any> {
     /**
-     * 发送数据时，序列化操作
-     * @param args
+     * 发送数据时，进行序列化操作。
+     * @param args 原始数据
+     * @returns 序列化后的数据
      */
     send: (args: T) => R;
     /**
-     * 接收到数据，反序列化操作
-     * @param rawArgs
+     * 接收到数据时，进行反序列化操作。
+     * @param rawArgs 接收到的原始数据
+     * @returns 反序列化后的数据
      */
     recv: (rawArgs: R) => T;
 }
@@ -102,7 +112,7 @@ export interface ServAPIOptions {
     timeout?: number;
 
     /**
-     * API是否有返回值，默认为true
+     * API是否有返回值，默认为true。如果为true，则为"即发即忘"模式。
      *
      * @type {boolean}
      * @memberof ServAPIOptions
@@ -234,7 +244,15 @@ export interface ServAPICallOptions {
  * @interface ServAPICallContext
  */
 export interface ServAPICallContext {
+    /**
+     * 发起调用的远端终端信息
+     * @type {ServTerminal}
+     */
     terminal: ServTerminal;
+    /**
+     * 附加数据，可用于在调用链路中传递额外信息
+     * @type {*}
+     */
     extData: any;
 }
 
@@ -310,9 +328,9 @@ export interface ServServiceMeta {
  */
 export class ServService {
     /**
-     * 获取Service meta数据
+     * 获取当前Service实例的元数据(meta)
      *
-     * @returns
+     * @returns {ServServiceMeta | undefined}
      * @memberof ServService
      */
     meta() {
@@ -320,9 +338,9 @@ export class ServService {
     }
 
     /**
-     * 获取Service impl meta数据
+     * 获取当前Service实例的实现相关的元数据(impl meta)
      *
-     * @returns
+     * @returns {(ServServiceImplMeta | undefined)}
      * @memberof ServService
      */
     implMeta() {
@@ -330,7 +348,8 @@ export class ServService {
     }
 
     /**
-     * 根据ID获取Service，只能获取Service所在Manager中的服务
+     * 根据ID获取Service，只能获取Service所在Manager中的服务。
+     * 注意：这是一个桩函数(stub)，实际功能由ServiceManager在运行时注入。
      *
      * @template T
      * @param {string} id
@@ -343,7 +362,8 @@ export class ServService {
     }
 
     /**
-     * 根据类型获取Service，只能获取Service所在Manager中的服务
+     * 根据类型获取Service，只能获取Service所在Manager中的服务。
+     * 注意：这是一个桩函数(stub)，实际功能由ServiceManager在运行时注入。
      *
      * @template T
      * @param {T} decl
@@ -359,7 +379,8 @@ export class ServService {
     }
 
     /**
-     * 根据类型获取Service，只能获取Service所在Manager中的服务
+     * 根据类型获取Service（非空断言版），获取不到会抛出异常。
+     * 注意：这是一个桩函数(stub)，实际功能由ServiceManager在运行时注入。
      *
      * @template T
      * @param {T} decl
@@ -375,7 +396,8 @@ export class ServService {
     }
 
     /**
-     * 根据类型获取Service，异步版本，只能获取Service所在Manager中的服务
+     * 根据类型获取Service，异步版本。当服务需要异步加载时使用。
+     * 注意：这是一个桩函数(stub)，实际功能由ServiceManager在运行时注入。
      *
      * @template T
      * @param {T} decl
@@ -391,7 +413,8 @@ export class ServService {
     }
 
     /**
-     * 根据类型获取Service，callback版本，只能获取Service所在Manager中的服务
+     * 根据类型获取Service，并执行回调。
+     * 注意：这是一个桩函数(stub)，实际功能由ServiceManager在运行时注入。
      *
      * @template T
      * @template R
@@ -416,7 +439,8 @@ export class ServService {
     }
 
     /**
-     * 根据ID获取Service，callback版本，只能获取Service所在Manager中的服务
+     * 根据ID获取Service，并执行回调。
+     * 注意：这是一个桩函数(stub)，实际功能由ServiceManager在运行时注入。
      *
      * @template T
      * @template R
@@ -431,10 +455,10 @@ export class ServService {
     }
 
     /**
-     * 获取Service meta数据
+     * 获取Service类的元数据
      *
      * @static
-     * @returns
+     * @returns {(ServServiceMeta | undefined)}
      * @memberof ServService
      */
     static meta() {
@@ -442,9 +466,10 @@ export class ServService {
     }
 
     /**
-     * 获取Service impl meta数据
+     * 获取Service类的实现相关的元数据
      *
-     * @returns
+     * @static
+     * @returns {(ServServiceImplMeta | undefined)}
      * @memberof ServService
      */
     static implMeta() {
@@ -458,7 +483,7 @@ export class ServService {
 const META = '__serv_service_meta';
 
 /**
- * Service decl相关注解
+ * Service decl相关注解的集合类型
  *
  * @export
  * @interface ServAnnoDecl
@@ -471,7 +496,7 @@ export interface ServAnnoDecl {
 }
 
 /**
- * Service impl相关注解
+ * Service impl相关注解的集合类型
  *
  * @export
  * @interface ServAnnoImpl
@@ -480,6 +505,13 @@ export interface ServAnnoImpl {
     (options?: ServImplOptions): ((cls: typeof ServService) => void);
 }
 
+/**
+ * @anno.decl
+ * 服务声明装饰器，用于注解一个服务接口定义类（通常是抽象类）。
+ * 它将 id, version 等元数据附加到类的原型上，用于框架识别和管理服务。
+ *
+ * @param {ServDeclOptions} options 服务声明的配置选项
+ */
 const decl: ServAnnoDecl = ((options: ServDeclOptions) => {
     return function(cls: typeof ServService) {
         try {
@@ -517,6 +549,13 @@ const decl: ServAnnoDecl = ((options: ServDeclOptions) => {
     };
 }) as any;
 
+/**
+ * @anno.impl
+ * 服务实现装饰器，用于注解一个服务的具体实现类。
+ * 它会校验该类是否完整实现了接口声明的所有API，并可配置实现相关的选项。
+ *
+ * @param {ServImplOptions} [options] 服务实现的配置选项
+ */
 const impl: ServAnnoImpl = ((options?: ServImplOptions) => {
     return function(cls: any) {
         try {
@@ -555,9 +594,10 @@ const impl: ServAnnoImpl = ((options?: ServImplOptions) => {
 }) as any;
 
 /**
- * Service api 注解
+ * @anno.decl.api
+ * Service api 注解，用于在服务声明类中标记一个方法为RPC接口。
  *
- * @param {ServAPIOptions} [options]
+ * @param {ServAPIOptions} [options] API相关的配置选项，如超时时间、返回值等
  * @returns
  */
 function api(options?: ServAPIOptions) {
@@ -588,7 +628,9 @@ function api(options?: ServAPIOptions) {
 }
 
 /**
- * Service notify 注解
+ * @anno.decl.notify
+ * Service notify 注解, 是api({ dontRetn: true }) 的一种简写形式。
+ * 用于声明一个"即发即忘"的通知型API，客户端调用后不会等待返回。
  *
  * @param {ServNotifyOptions} [options]
  * @returns
@@ -603,9 +645,10 @@ function notify(options?: ServNotifyOptions) {
 }
 
 /**
- * Service event 注解
+ * @anno.decl.event
+ * Service event 注解, 用于在服务声明类中标记一个属性为事件发射器。
  *
- * @param {ServEventerOptions} [options]
+ * @param {ServEventerOptions} [options] 事件相关的配置选项
  * @returns
  */
 function event(options?: ServEventerOptions) {
@@ -637,10 +680,11 @@ function event(options?: ServEventerOptions) {
 }
 
 /**
- * 获取Service meta数据；可通过Service对象或者Service类进行获取
+ * 获取Service元数据；可通过Service对象、Service类或其原型进行获取。
+ * 元数据存储在对象的 `__serv_service_meta` 属性中。
  *
  * @param {(typeof ServService | ServService)} obj
- * @param {boolean} [create]
+ * @param {boolean} [create] 如果为true且元数据不存在，则会创建一个新的元数据对象
  * @returns {(ServServiceMeta | undefined)}
  */
 function meta(obj: typeof ServService | ServService, create?: boolean): ServServiceMeta | undefined {
@@ -687,10 +731,11 @@ function meta(obj: typeof ServService | ServService, create?: boolean): ServServ
 const IMPL = '__serv_service_impl_meta';
 
 /**
- * 获取Service impl相关meta数据
+ * 获取Service impl相关meta数据。
+ * 元数据存储在对象的 `__serv_service_impl_meta` 属性中。
  *
  * @param {(typeof ServService | ServService)} obj
- * @param {boolean} [create]
+ * @param {boolean} [create] 如果为true且元数据不存在，则会创建一个新的元数据对象
  * @returns {(ServServiceImplMeta | undefined)}
  */
 function implMeta(obj: typeof ServService | ServService, create?: boolean): ServServiceImplMeta | undefined {
