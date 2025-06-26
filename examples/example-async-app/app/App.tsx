@@ -6,18 +6,18 @@ import { sappSDK } from '../core/common';
 export function App() {
 
     const showMessage = async () => {
-        const message = await sappSDK.getService(MessageService);
-        await message!.info('点击弹出成功！');
+        const { message } = await sappSDK.getService({ message: MessageService });
+        await message?.info('点击弹出成功！');
     };
 
     const showMessage2 = async () => {
-        const message = await sappSDK.getService(Message2Service);
-        await message!.info('点击弹出成功！');
+        const { message } = await sappSDK.getService({ message: Message2Service });
+        await message?.info('点击弹出成功！');
     };
 
     const showMessage3 = async () => {
-        const message = await sappSDK.getService(Message2Service);
-        await message!.info2('点击弹出成功！');
+        const { message } = await sappSDK.getService({ message: Message2Service });
+        await message?.info2('点击弹出成功！');
     };
 
     return (
