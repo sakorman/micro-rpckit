@@ -380,9 +380,9 @@ export class SappMGR {
      * @type {ServGlobalServiceManager['getService']}
      * @memberof SappMGR
      */
-    getService: ServGlobalServiceManager['getService'] = function(this: SappMGR) {
+    getService: ServGlobalServiceManager['getService'] = function(this: SappMGR, ...args: any[]) {
         const serviceManager = this.getRpckit().service;
-        return serviceManager.getService.apply(serviceManager, arguments);
+        return (serviceManager.getService as any)(...args);
     };
 
     /**
@@ -391,9 +391,9 @@ export class SappMGR {
      * @type {ServGlobalServiceManager['getServiceUnsafe']}
      * @memberof SappMGR
      */
-    getServiceUnsafe: ServGlobalServiceManager['getServiceUnsafe'] = function(this: SappMGR) {
+    getServiceUnsafe: ServGlobalServiceManager['getServiceUnsafe'] = function(this: SappMGR, ...args: any[]) {
         const serviceManager = this.getRpckit().service;
-        return serviceManager.getServiceUnsafe.apply(serviceManager, arguments);
+        return (serviceManager.getServiceUnsafe as any)(...args);
     };
 
     /**
@@ -402,9 +402,9 @@ export class SappMGR {
      * @type {ServGlobalServiceManager['service']}
      * @memberof SappMGR
      */
-    service: ServGlobalServiceManager['service'] = function(this: SappMGR) {
+    service: ServGlobalServiceManager['service'] = function(this: SappMGR, ...args: any[]) {
         const serviceManager = this.getRpckit().service;
-        return serviceManager.service.apply(serviceManager, arguments);
+        return (serviceManager.service as any)(...args);
     };
 
     /**
@@ -413,9 +413,9 @@ export class SappMGR {
      * @type {ServGlobalServiceManager['serviceExec']}
      * @memberof SappMGR
      */
-    serviceExec: ServGlobalServiceManager['serviceExec'] = function(this: SappMGR) {
+    serviceExec: ServGlobalServiceManager['serviceExec'] = function(this: SappMGR, ...args: any[]) {
         const serviceManager = this.getRpckit().service;
-        return serviceManager.serviceExec.apply(serviceManager, arguments);
+        return (serviceManager.serviceExec as any)(...args);
     };
 
     /**
@@ -424,9 +424,9 @@ export class SappMGR {
      * @type {ServGlobalServiceManager['addServices']}
      * @memberof SappMGR
      */
-    addServices: ServGlobalServiceManager['addServices'] = function(this: SappMGR) {
+    addServices: ServGlobalServiceManager['addServices'] = function(this: SappMGR, ...args: any[]) {
         const serviceManager = this.getRpckit().service;
-        return serviceManager.addServices.apply(serviceManager, arguments);
+        return (serviceManager.addServices as any)(...args);
     };
 
     /**
@@ -435,9 +435,9 @@ export class SappMGR {
      * @type {ServGlobalServiceManager['remServices']}
      * @memberof SappMGR
      */
-    remServices: ServGlobalServiceManager['remServices'] = function(this: SappMGR) {
+    remServices: ServGlobalServiceManager['remServices'] = function(this: SappMGR, ...args: any[]) {
         const serviceManager = this.getRpckit().service;
-        return serviceManager.remServices.apply(serviceManager, arguments);
+        return (serviceManager.remServices as any)(...args);
     };
 
     /**
@@ -619,14 +619,15 @@ export class SappMGR {
             appOptions.createACLResolver = this.config.createACLResolver;
         }
 
-        const app = this.createApp(this.nextAppUuid(info), info, appOptions) as SappHostPage;
+        const app = this.createApp<SappHostPage>(this.nextAppUuid(info), info, appOptions);
         this.hostApp = app;
+        
 
         if (this._hostAppStarted) {
             app.started.then(() => {
-                this._hostAppStarted!.resolve();
+                this._hostAppStarted?.resolve();
             }, (e) => {
-                this._hostAppStarted!.reject(e);
+                this._hostAppStarted?.reject(e);
             });
         }
 
@@ -729,7 +730,7 @@ export class SappMGR {
             options.createACLResolver = this.config.createACLResolver;
         }
 
-        app = this.createApp(this.nextAppUuid(info, options), info, options);
+        app = this.createApp(this.nextAppUuid(info, options), info, options) as Sapp;
 
         this.addApp(app);
         app.closed.then(() => {
@@ -881,31 +882,31 @@ export class SappMGR {
         return `${info.id}-${nextUUID()}`;
     }
 
-    protected createApp(uuid: string, info: SappInfo, options: SappCreateOptions): Sapp {
+    protected createApp<T extends Sapp | SappHostPage | SappPlainPage>(uuid: string, info: SappInfo, options: SappCreateOptions): T {
         const app = info.type === ESappType.HOST_PAGE ? new SappHostPage(uuid, info, this)
-                    : info.options.isPlainPage ? new SappPlainPage(uuid, info, this)
-                    : new Sapp(uuid, info, this);
+            : info.options.isPlainPage ? new SappPlainPage(uuid, info, this)
+                : new Sapp(uuid, info, this);
         this.createAppController(app, options);
 
-        return app;
+        return app as T;
     }
 
-    protected createAppController(app: Sapp, options: SappCreateOptions) {
+    protected createAppController(app: Sapp | SappHostPage | SappPlainPage, options: SappCreateOptions) {
         if (options.createAppController) {
-            return options.createAppController(this, app);
+            return options.createAppController(this, app as Sapp);
         }
 
         if (this.config.createAppController) {
-            return this.config.createAppController(this, app);
+            return this.config.createAppController(this, app as Sapp);
         }
 
-        return this.createDefaultAppController(app);
+        return this.createDefaultAppController(app as Sapp);
     }
 
     protected createDefaultAppController(app: Sapp): SappController {
         return app.info.type === ESappType.ASYNC_LOAD ? new SappDefaultAsyncLoadController(app)
             : app.info.type === ESappType.HOST_PAGE ? new SappDefaultHostPageController(app)
-            : new SappDefaultIFrameController(app);
+                : new SappDefaultIFrameController(app);
     }
 
     /**
