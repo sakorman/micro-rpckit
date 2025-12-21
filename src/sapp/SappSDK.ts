@@ -595,8 +595,8 @@ export class SappSDK extends EventEmitter {
         if (options.params) {
             resolveParams = 
                 typeof options.params === 'function' 
-                ? options.params 
-                : (() => options.params! as SappSDKStartParams) ;
+                    ? options.params 
+                    : (() => options.params! as SappSDKStartParams) ;
         } else {
             resolveParams = this.config.resolveStartParams;
         }
@@ -721,8 +721,8 @@ export class SappSDK extends EventEmitter {
             let authInfo: AuthParams;
             if (this.config.authInfo) {
                 authInfo = typeof this.config.authInfo === 'function'
-                            ? (await this.config.authInfo(this))
-                            : this.config.authInfo;
+                    ? (await this.config.authInfo(this))
+                    : this.config.authInfo;
             } else {
                 authInfo = {
                     token: '',
@@ -893,7 +893,7 @@ export class SappAsyncLoadSDK extends SappSDK {
 
 let sInstance: SappSDK = undefined!;
 try {
-sInstance = new SappSDK();
+    sInstance = new SappSDK();
 } catch (e) {
     asyncThrow(e);
 }

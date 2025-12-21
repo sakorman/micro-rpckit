@@ -1,5 +1,10 @@
 import { Rpckit, rpckit as defaultRpckit } from '../rpckit/Rpckit';
 import { SappSDKAsyncLoadStartParams, SappSDKAsyncLoadDeclContext } from '../sapp/SappSDK';
+//  Date.prototype.getTime 属于 JavaScript 原生对象的原型链
+// 所有运行在同一页面的脚本（无论是否同仓库、同打包工具）都能访问到它
+// 这里为什么不直接挂载到window呢？
+// 1. 如果直接将共享内存挂载到 window 上（如 window.__servkit_shared），可能会与其他库的全局变量冲突
+// 2. avaScript 中函数也是对象，允许为其附加自定义属性（不会影响函数本身的功能）。
 const target = Date.prototype.getTime as any;
 
 interface ShareParams {
