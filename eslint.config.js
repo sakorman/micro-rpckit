@@ -86,6 +86,8 @@ export default tseslint.config(
             'no-case-declarations': 'off',
             'no-constant-condition': 'off',
             'no-inner-declarations': 'off',
+            'prefer-rest-params': 'off',
+            'prefer-spread': 'off',
         },
     }
 );
