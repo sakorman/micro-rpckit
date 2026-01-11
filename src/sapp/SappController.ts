@@ -67,14 +67,14 @@ export abstract class SappController {
 
         if (options.startData !== undefined) {
             config.resolveStartData = typeof options.startData === 'function'
-                                        ? options.startData
-                                        : (() => options.startData);
+                ? options.startData
+                : (() => options.startData);
         }
 
         if (options.startShowData !== undefined) {
             config.resolveStartShowData = typeof options.startShowData === 'function'
-                                        ? options.startShowData
-                                        : (() => options.startShowData);
+                ? options.startShowData
+                : (() => options.startShowData);
         }
 
         if (options.createACLResolver) {

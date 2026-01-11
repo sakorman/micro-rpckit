@@ -251,8 +251,8 @@ export class SappHostPage extends Sapp {
         });
 
         const timeout = -1;
-                        // config.startTimeout
-                        // || EServConstant.SERV_SAPP_ON_START_TIMEOUT;
+        // config.startTimeout
+        // || EServConstant.SERV_SAPP_ON_START_TIMEOUT;
 
         await this.terminal.openSession({ timeout, waiting: aclResolver ? aclResolver.init() : undefined });
     }
